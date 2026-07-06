@@ -27,6 +27,15 @@ Worker responsibilities:
   missing dependency, or genuine ambiguity prevents completion.
 - Do not simply exit without `kanban_complete` or `kanban_block`.
 
+Validation boundaries:
+
+- Prefer official Hermes tools, Kanban task data, receipts, repository files,
+  and non-mutating repository checks as evidence.
+- Do not import `advisor_gate.*`, `hermes_cli.*`, or other plugin/core internals
+  from ad hoc Python snippets to claim live workflow success.
+- On the Pi runtime, use `/home/pi/.local/bin/hermes` for Hermes CLI checks if a
+  terminal command is explicitly assigned and bare `hermes` is unavailable.
+
 Worker result shape:
 
 - `scope`: assigned scope.

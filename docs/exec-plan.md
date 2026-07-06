@@ -19,6 +19,7 @@
 | Advisor | Review-only を維持し、直接実行しない |
 | 本体改修 | 行わない。公式のプロフィール、ツールセット、Skill、Plugin、Hook を使う |
 | 初期除外 | `delegate_task`、独自キュー、実行時差し替え、Hermes Core 直接変更 |
+| 実行証跡 | 公式CLI、Kanban、Advisorレシート、Skill、Plugin Hook、リポジトリチェックに限定する |
 
 ## 確認済み前提
 
@@ -192,6 +193,8 @@ Advisor の `CHANGES_REQUIRED` または `BLOCK` は、Kanban タスクが自動
 
 - Pi 上で証跡付き smoke が再現できる。
 - 証跡は Kanban タスク ID、セッション ID、完了要約、メタ情報で追える。
+- Plugin/Core 内部モジュールの直接 import による私的シミュレーションを
+  live smoke の代替証跡にしない。
 
 ### Phase 6: テストと回帰確認
 

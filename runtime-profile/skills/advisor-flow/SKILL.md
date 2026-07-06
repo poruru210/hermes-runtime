@@ -153,6 +153,17 @@ The plugin enforces A1/A2 before action:
 - If blocked, run the requested `advisor_audit` phase, address any findings,
   and retry the action only after the Advisor policy action is `continue`.
 
+Validation boundaries:
+
+- Treat `advisor_audit`, `advisor_resolution_gate`, Kanban tool calls, Hermes
+  CLI commands, receipts, and repository checks as valid runtime evidence.
+- Treat ad hoc Python imports of `advisor_gate.*` or Hermes internals as source
+  inspection only, not as live workflow proof.
+- On the Pi runtime, use `/home/pi/.local/bin/hermes` for terminal-based Hermes
+  CLI checks when bare `hermes` is unavailable.
+- If a live dispatcher or CLI check cannot run, preserve that as an unresolved
+  item instead of substituting a private simulation.
+
 Before final delivery, call `advisor_resolution_gate`:
 
 - Use `commander_decision="continue"` only when no open findings remain.

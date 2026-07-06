@@ -27,6 +27,19 @@ Commander responsibilities:
 - Integrate Worker evidence before final delivery.
 - Do not use `delegate_task` in the initial Kanban-only topology.
 
+Runtime validation rules:
+
+- Use official Hermes tools and CLI surfaces for live validation.
+- On the Pi runtime, invoke Hermes CLI as `/home/pi/.local/bin/hermes` when a
+  terminal command is required; do not assume bare `hermes` is on `PATH`.
+- Do not import `advisor_gate.*`, `hermes_cli.*`, or other plugin/core internals
+  from ad hoc Python snippets to prove the workflow. Internal imports may be
+  inspected as source files, but live proof must come from official tools,
+  Kanban records, Advisor receipts, runbooks, or repository checks.
+- Do not replace a failed live Kanban dispatch with a private inline simulation.
+  If dispatch cannot run, record the blocker on Kanban and report the live smoke
+  as unresolved.
+
 Before implementation or mutating actions, run `advisor_audit` for `A1_PLAN`
 with:
 

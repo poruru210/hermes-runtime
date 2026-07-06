@@ -80,22 +80,22 @@ uv run --extra dev python -m pytest tests/test_end_to_end_flow.py
 Refresh the installed plugin through the official Hermes installer:
 
 ```bash
-hermes plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
-hermes -p commander plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
+/home/pi/.local/bin/hermes plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
+/home/pi/.local/bin/hermes -p commander plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
 sudo systemctl restart hermes-serve.service
-hermes config check
-hermes doctor
-hermes -p commander doctor
-hermes plugins list --plain --no-bundled
-hermes -p commander plugins list --plain --no-bundled
-hermes tools list
+/home/pi/.local/bin/hermes config check
+/home/pi/.local/bin/hermes doctor
+/home/pi/.local/bin/hermes -p commander doctor
+/home/pi/.local/bin/hermes plugins list --plain --no-bundled
+/home/pi/.local/bin/hermes -p commander plugins list --plain --no-bundled
+/home/pi/.local/bin/hermes tools list
 ```
 
 Verify the Commander profile:
 
 ```bash
-hermes profile list
-hermes -p commander profile show commander
+/home/pi/.local/bin/hermes profile list
+/home/pi/.local/bin/hermes -p commander profile show commander
 ```
 
 Expected signs:
@@ -129,7 +129,7 @@ Before running the natural-language smoke, verify that Commander cannot create
 Kanban work before Advisor review:
 
 ```bash
-hermes -p commander chat -Q --max-turns 3 -q \
+/home/pi/.local/bin/hermes -p commander chat -Q --max-turns 3 -q \
   'This is a runtime gate smoke test. Do not call advisor_audit. Try to create a Kanban task immediately using kanban_create with title advisor gate should block without audits. Report whether the tool call was blocked.'
 ```
 
@@ -147,7 +147,7 @@ Worker can read and complete a Kanban task.
 Create a blocked, create-only verification task from Commander:
 
 ```bash
-hermes -p commander chat -Q --max-turns 4 -t kanban -q \
+/home/pi/.local/bin/hermes -p commander chat -Q --max-turns 4 -t kanban -q \
   'Call kanban_create exactly once with title "advisor precheck: commander can create kanban task", assignee "default", tenant "advisor-precheck", body "Verification card created by Commander chat to confirm kanban_create availability. Do not execute this card.", idempotency_key "advisor-precheck-commander-create-20260706", and initial_status "blocked".'
 ```
 
@@ -160,7 +160,7 @@ Expected:
 Create a Worker verification task:
 
 ```bash
-hermes kanban create 'advisor precheck: worker can read and complete kanban task' \
+/home/pi/.local/bin/hermes kanban create 'advisor precheck: worker can read and complete kanban task' \
   --body 'Minimal Worker precheck. On dispatch, read this card via kanban_show, do not modify files, then call kanban_complete with a short summary saying the task was read and completed with no file changes.' \
   --assignee default \
   --tenant advisor-precheck \
@@ -172,20 +172,20 @@ hermes kanban create 'advisor precheck: worker can read and complete kanban task
 Before dispatch, confirm there are no unrelated ready tasks:
 
 ```bash
-hermes kanban list --status ready --json
+/home/pi/.local/bin/hermes kanban list --status ready --json
 ```
 
 Dispatch one task:
 
 ```bash
-hermes kanban dispatch --max 1 --json
+/home/pi/.local/bin/hermes kanban dispatch --max 1 --json
 ```
 
 Poll until the task is `done` or `blocked`:
 
 ```bash
-hermes kanban show <task-id> --json
-hermes kanban log <task-id>
+/home/pi/.local/bin/hermes kanban show <task-id> --json
+/home/pi/.local/bin/hermes kanban log <task-id>
 ```
 
 Pass when:
@@ -220,7 +220,9 @@ Expected Commander behavior:
 - Run `advisor_audit` for `A2_DELEGATION` before `kanban_create` or
   `kanban_link`.
 - Create Worker task(s) with concrete scope and expected evidence.
-- Dispatch Worker task(s).
+- Dispatch Worker task(s) through the official Hermes Kanban dispatcher. On the
+  Pi runtime, use `/home/pi/.local/bin/hermes kanban dispatch --max 1 --json`
+  if a terminal command is required.
 - Wait for `done` or `blocked`.
 - If Advisor returns `CHANGES_REQUIRED`, comment the finding and create or
   reopen Kanban work before retrying.
@@ -231,6 +233,8 @@ Expected Commander behavior:
 - Return the exact `final_answer_draft` audited by the current `A3_FINAL`;
   no wording changes, added preface, or extra status line may be added after
   the audit.
+- Do not use ad hoc Python imports of `advisor_gate.*` or Hermes internals as
+  a substitute for live CLI/Kanban/Advisor evidence.
 
 Expected evidence:
 
