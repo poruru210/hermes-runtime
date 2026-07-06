@@ -1,0 +1,162 @@
+# End-to-End Validation Runbook
+
+This runbook validates the Advisor overlay without patching Hermes core.
+
+The validation defines roles at the scenario level:
+
+| Scenario role | Hermes-backed evidence | Advisor responsibility |
+|---|---|---|
+| User | The validation request in the A1 packet | Source request to compare against the plan |
+| Commander | Parent `session_id` and the caller of Advisor tools | Plan, delegation, exception handling, final decision |
+| Worker | Child `session_id` plus `child_role` from Hermes subagent hooks | Narrow execution result and evidence |
+| Advisor | `advisor_audit` and `advisor_resolution_gate` | Review-only audit, findings, verdicts, receipts |
+| Receipt | Advisor JSONL records | Evidence that the flow ran in order |
+
+## Scope
+
+This validates the plugin and skill design through official Hermes plugin
+surfaces:
+
+- `advisor_audit`
+- `advisor_resolution_gate`
+- `pre_tool_call`
+- `post_tool_call`
+- `subagent_start`
+- `subagent_stop`
+- `pre_verify` / final delivery gate behavior
+
+It does not validate Hermes standard session-history integration. That remains
+outside the plugin-only scope.
+
+## Deterministic Plugin Flow
+
+Run this in the repository checkout:
+
+```bash
+mise run check
+```
+
+For the focused end-to-end scenario:
+
+```bash
+uv run --extra dev python -m pytest tests/test_end_to_end_flow.py
+```
+
+Expected result:
+
+```text
+tests/test_end_to_end_flow.py .  [100%]
+```
+
+The focused test proves this sequence:
+
+1. A mutating action is blocked before `A1_PLAN`.
+2. `A1_PLAN` passes with user request, Commander interpretation, plan,
+   coverage table, risk level, constraints, and evidence.
+3. The mutating action is allowed after same-turn `A1_PLAN`.
+4. Delegation is blocked before `A2_DELEGATION`.
+5. `A2_DELEGATION` passes with Commander plan, Worker assignment,
+   `child_role`, Worker scope, expected evidence, empty-result policy, and risk
+   level.
+6. Delegation is allowed after same-turn `A2_DELEGATION`.
+7. A Worker child session start is recorded.
+8. Final delivery is deferred while the Worker is active.
+9. A Worker child session stop is recorded.
+10. A planned tool failure is recorded.
+11. Final delivery requests `A3_EXCEPTION`.
+12. `A3_EXCEPTION` passes.
+13. Final delivery requests `A3_FINAL`.
+14. `A3_FINAL` receives observed Worker role evidence from receipts.
+15. Final delivery requests `advisor_resolution_gate`.
+16. `advisor_resolution_gate` records Commander continuation.
+17. Final delivery is allowed.
+
+## Pi Validation
+
+On the Pi host, update the repository checkout:
+
+```bash
+cd /home/pi/hermes-advisor-gate
+git pull --ff-only
+mise run check
+uv run --extra dev python -m pytest tests/test_end_to_end_flow.py
+```
+
+Refresh the installed plugin through the official Hermes installer:
+
+```bash
+hermes plugins install poruru210/hermes-advisor-gate/plugin/advisor-gate --force --enable
+hermes gateway restart
+hermes config check
+hermes doctor
+hermes plugins list --plain --no-bundled
+hermes tools list
+```
+
+Expected signs:
+
+```text
+advisor-gate: enabled
+Tool Availability: advisor_gate
+```
+
+Do not commit live receipt files, Hermes logs, tokens, or local terminal logs.
+Record only sanitized command outcomes in documentation or final reports.
+
+## Live Commander / Worker Smoke
+
+Use a new Hermes conversation after the plugin is installed and enabled.
+
+Prompt:
+
+```text
+Use Advisor Gate for this turn.
+
+Treat this conversation as the Commander session. Before doing any work, run
+advisor_audit for A1_PLAN with the user request, your interpretation, a task
+plan, a coverage table, risk level, constraints, source evidence, and known
+unresolved items.
+
+Then plan exactly one Worker delegation. Before delegating, run advisor_audit
+for A2_DELEGATION. The Worker assignment must include worker_id, child_role,
+scope, expected_evidence, empty_result_policy, risk_level, and handoff
+expectations.
+
+Delegate one narrow read-only Worker task. The Worker should inspect one small
+part of the current workspace and return concise evidence. Do not spawn deeper
+Workers.
+
+Before final delivery, include Worker evidence and observed receipts in
+A3_FINAL. Then record advisor_resolution_gate. If any Advisor result is
+CHANGES_REQUIRED or BLOCK, resolve or report it instead of finalizing.
+```
+
+Expected evidence:
+
+- One parent Commander session id.
+- One Worker child session id.
+- `child_role` recorded for the Worker.
+- `A1_PLAN`, `A2_DELEGATION`, `A3_FINAL`, and `RESOLUTION_GATE` receipts.
+- If any tool failure occurs, an `A3_EXCEPTION` receipt after that failure.
+- Final answer does not include hidden unresolved Advisor findings.
+
+## Pass / Fail Criteria
+
+Pass only when all of these are true:
+
+- No Hermes core files are changed.
+- Plugin checks pass locally and on Pi.
+- The focused end-to-end test passes on Pi.
+- Hermes reports `advisor-gate` enabled and `advisor_gate` available.
+- Receipts show the Commander/Worker/Advisor sequence in order.
+- Final delivery is blocked until current `A3_FINAL` and resolution gate exist.
+
+Fail or unresolved when any of these are true:
+
+- `child_role` is missing from Worker evidence.
+- A final draft can pass without current `A3_FINAL`.
+- A passed `A3_FINAL` can finish without `advisor_resolution_gate` when
+  resolution gate is required.
+- A tool failure after the latest exception audit can finish without a later
+  `A3_EXCEPTION`.
+- Verification depends on local logs or secrets that cannot be shared.

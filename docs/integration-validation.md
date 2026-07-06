@@ -10,7 +10,7 @@ Result:
 
 ```text
 compile: success
-pytest: 55 passed
+pytest: 64 passed
 ruff: success
 ty: success
 ```
@@ -38,6 +38,10 @@ Tests added under `tests/` cover:
 - `advisor_audit` success and degraded error path
 - soft gate hook behavior
 - subagent/tool receipt capture
+- Commander / Worker / Advisor end-to-end flow:
+  `A1_PLAN -> A2_DELEGATION -> Worker receipts -> A3_EXCEPTION -> A3_FINAL -> RESOLUTION_GATE`
+
+See `docs/end-to-end-validation-runbook.md` for the repeatable runbook.
 
 ## Hermes Runtime Checklist
 
@@ -83,6 +87,18 @@ hooks: subagent_start, subagent_stop, pre_tool_call, post_tool_call,
 
 Then run an Advisor smoke through the real Hermes tool registry and confirm an
 `A3_FINAL` result can return `policy_action=continue`.
+
+For the focused plugin flow, run:
+
+```bash
+uv run --extra dev python -m pytest tests/test_end_to_end_flow.py
+```
+
+Expected result:
+
+```text
+1 passed
+```
 
 ## Discord Orchestration Smoke
 
