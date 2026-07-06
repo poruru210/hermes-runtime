@@ -17,10 +17,13 @@ uv run --extra dev python -m pytest tests/test_end_to_end_flow.py
 
 ## Install Advisor Gate Plugin
 
-Use the official Hermes plugin installer:
+Use the official Hermes plugin installer for each profile that must run
+Advisor Gate hooks. For the Kanban workflow, install it in the Commander
+profile:
 
 ```bash
 hermes plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
+hermes -p commander plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
 ```
 
 ## Configure Commander Profile
@@ -32,13 +35,21 @@ commands. The Commander profile must have `kanban` in its profile config; using
 ```bash
 hermes profile create commander --clone \
   --description "Plans user requests, creates Kanban task graphs, and does not perform implementation work directly."
-hermes -p commander config set toolsets '[kanban, advisor_gate, skills]'
 ```
 
-If the profile already exists, keep it and re-run only the config command:
+If the profile already exists, keep it. Then edit the Commander profile config:
 
 ```bash
-hermes -p commander config set toolsets '[kanban, advisor_gate, skills]'
+hermes -p commander config edit
+```
+
+Ensure `toolsets` is a YAML list, not a quoted string:
+
+```yaml
+toolsets:
+  - kanban
+  - advisor_gate
+  - skills
 ```
 
 Register the runtime skills as an external skill directory:
@@ -76,8 +87,10 @@ Expected signs:
 - `hermes-serve.service` is `active`.
 - `advisor-gate` is enabled.
 - `hermes doctor` reports `advisor_gate` under Tool Availability.
+- `hermes -p commander doctor` reports `advisor_gate` under Tool Availability.
 - `commander` profile exists.
-- `commander` profile has `toolsets = [kanban, advisor_gate, skills]`.
+- `commander` profile has `toolsets` as a YAML list containing `kanban`,
+  `advisor_gate`, and `skills`.
 - Repository checks pass.
 
 Do not commit local logs, receipts, auth files, `.env`, or terminal captures

@@ -81,10 +81,13 @@ Refresh the installed plugin through the official Hermes installer:
 
 ```bash
 hermes plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
+hermes -p commander plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
 sudo systemctl restart hermes-serve.service
 hermes config check
 hermes doctor
+hermes -p commander doctor
 hermes plugins list --plain --no-bundled
+hermes -p commander plugins list --plain --no-bundled
 hermes tools list
 ```
 
@@ -102,6 +105,36 @@ advisor-gate: enabled
 Tool Availability: advisor_gate
 Profile: commander
 ```
+
+If `hermes -p commander plugins list --plain --no-bundled` does not show
+`advisor-gate`, Advisor hooks are not installed for the Commander profile and
+the live smoke is invalid.
+
+The Commander profile must store `toolsets` as a YAML list:
+
+```yaml
+toolsets:
+  - kanban
+  - advisor_gate
+  - skills
+```
+
+Do not set this with `hermes -p commander config set toolsets '[kanban,
+advisor_gate, skills]'`; on current Hermes this stores a quoted scalar, not a
+YAML list.
+
+## Advisor Gate Runtime Block Check
+
+Before running the natural-language smoke, verify that Commander cannot create
+Kanban work before Advisor review:
+
+```bash
+hermes -p commander chat -Q --max-turns 3 -q \
+  'This is a runtime gate smoke test. Do not call advisor_audit. Try to create a Kanban task immediately using kanban_create with title advisor gate should block without audits. Report whether the tool call was blocked.'
+```
+
+Pass when the Advisor receipt store contains a `blocked_tool_call` event for
+`kanban_create` with phase `A1_PLAN` in the returned session.
 
 Do not commit live receipt files, Hermes logs, tokens, `.env`, auth files, or
 terminal captures that contain secrets.

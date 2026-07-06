@@ -8,6 +8,7 @@ from .policy import is_gate_passed
 from .schemas import (
     AdvisorPhase,
     AdvisorResult,
+    AdvisorVerdict,
     ResolutionGate,
     resolution_gate_from_dict,
     result_from_dict,
@@ -93,6 +94,10 @@ def result_from_receipt_entry(entry: dict[str, Any]) -> AdvisorResult | None:
         )
     except (KeyError, ValueError):
         return None
+
+
+def result_verdict_passed(result: AdvisorResult | None) -> bool:
+    return result is not None and result.verdict is AdvisorVerdict.PASS
 
 
 def latest_passed_audit_index(
@@ -188,7 +193,7 @@ def latest_current_final_audit(
         result = result_from_receipt_entry(entry)
         if (
             result is not None
-            and is_gate_passed(result)
+            and result_verdict_passed(result)
             and entry_final_audit_matches_response(entry, final_response)
         ):
             return index, result
@@ -207,7 +212,7 @@ def latest_unresolved_exception_event(
             continue
         if entry.get("phase") == AdvisorPhase.A3_EXCEPTION.value:
             result = result_from_receipt_entry(entry)
-            if is_gate_passed(result):
+            if result_verdict_passed(result):
                 latest_passed_audit_index = index
         extra = entry.get("extra")
         if (

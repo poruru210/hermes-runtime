@@ -405,6 +405,40 @@ def test_final_delivery_gate_returns_to_final_gate_after_exception_passes(tmp_pa
     assert "A3_EXCEPTION" not in response["message"]
 
 
+def test_degraded_exception_pass_clears_exception_gate(tmp_path):
+    store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
+    on_post_tool_call(
+        store,
+        session_id="s1",
+        tool_name="terminal",
+        status="failed",
+        error_type="runtime_error",
+        result='{"error": "boom"}',
+    )
+    store.append_result(
+        session_id="s1",
+        result=AdvisorResult(
+            phase=AdvisorPhase.A3_EXCEPTION,
+            verdict=AdvisorVerdict.PASS,
+            degraded=True,
+            known_unresolved=("Recovered with limitations.",),
+            diagnostics=("Failure was recovered with a known limitation.",),
+        ),
+        source="test",
+    )
+
+    response = on_final_delivery_gate(
+        store,
+        AdvisorGateConfig(),
+        final_response="done",
+        session_id="s1",
+    )
+
+    assert response is not None
+    assert "FinalPayload" in response["message"]
+    assert "A3_EXCEPTION" not in response["message"]
+
+
 def test_final_delivery_gate_reaudits_final_after_exception_audit(tmp_path):
     store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
     _append_pass_final(store, "s1", "done")
@@ -552,6 +586,52 @@ def test_final_delivery_gate_allows_after_pass_and_resolution_gate(tmp_path):
             {
                 "commander_decision": "continue",
                 "reason": "No open findings.",
+                "open_findings": [],
+                "resolutions": [],
+            }
+        ),
+        source="test",
+    )
+
+    assert (
+        on_final_delivery_gate(
+            store,
+            AdvisorGateConfig(),
+            final_response="draft",
+            session_id="s1",
+        )
+        is None
+    )
+
+
+def test_degraded_final_pass_allows_resolution_gate_to_decide(tmp_path):
+    store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
+    store.append_result(
+        session_id="s1",
+        result=AdvisorResult(
+            phase=AdvisorPhase.A3_FINAL,
+            verdict=AdvisorVerdict.PASS,
+            degraded=True,
+            known_unresolved=("Live runtime check unresolved.",),
+            diagnostics=("Final delivery can continue with disclosed limitation.",),
+        ),
+        source="test",
+        extra={
+            "packet": {
+                "actions_taken": [],
+                "tests_or_checks": [],
+                "known_unresolved": ["Live runtime check unresolved."],
+                "final_answer_draft": "draft",
+                "flow_summary": "tested",
+            }
+        },
+    )
+    store.append_resolution_gate(
+        session_id="s1",
+        gate=resolution_gate_from_dict(
+            {
+                "commander_decision": "continue",
+                "reason": "Known limitation is disclosed.",
                 "open_findings": [],
                 "resolutions": [],
             }
