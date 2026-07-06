@@ -137,6 +137,9 @@ Runtime inspection during a turn:
 This is an operator-only topology diagnostic, not a normal user-facing smoke
 test. It intentionally prescribes internal delegation shape to verify that the
 baseline Hermes delegation depth and `child_role` behavior work as configured.
+The three leaf workers in this diagnostic are a fanout probe for the configured
+concurrency cap. They are not a product requirement and are not the Advisor's
+chosen decomposition units.
 
 For normal Advisor smoke tests, use a natural-language request and let the
 Commander decide whether delegation is useful.

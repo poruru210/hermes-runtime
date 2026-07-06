@@ -119,6 +119,8 @@ Pass criteria:
 
 - The user request is natural language, not a topology instruction.
 - The Commander records `A1_PLAN` and, if it delegates, `A2_DELEGATION`.
+- Advisor audits the chosen delegation plan; it does not choose the worker count
+  or decomposition units.
 - Worker child receipts include `child_session_id` and `child_role`.
 - Worker scope stays narrow and evidence-focused.
 - `subagent_start` / `subagent_stop` receipts are written.

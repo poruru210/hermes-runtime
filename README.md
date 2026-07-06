@@ -17,6 +17,9 @@ surfaces only.
   is used.
 - Level 2 workers are leaves when `delegate_task(role="leaf")` is used.
 - Delegation is capped at three concurrent children and depth two.
+- The cap of three concurrent children is an upper bound, not a requirement to
+  create three workers. The Commander decides whether delegation is useful and
+  how many workers are justified by the task.
 - Compression uses the main model through `auxiliary.compression.provider: main`.
 - Fallback uses `zai` with `glm-4.7`.
 - Smart routing is disabled by omitting `provider_routing`.
@@ -143,6 +146,8 @@ Expected behavior:
 
 - The user speaks in natural language only.
 - The Commander decides whether delegation is useful.
+- Advisor audits the Commander plan and delegation evidence; it does not choose
+  the worker count or assign decomposition units.
 - If delegation is used, `/agents` or `/tasks` shows the parent/child shape.
 - Worker receipts include `child_session_id` and `child_role`.
 - Worker scope stays narrow and evidence-focused.

@@ -12,6 +12,18 @@ The validation defines roles at the scenario level:
 | Advisor | `advisor_audit` and `advisor_resolution_gate` | Review-only audit, findings, verdicts, receipts |
 | Receipt | Advisor JSONL records | Evidence that the flow ran in order |
 
+Responsibility boundaries:
+
+- The User states the desired outcome in natural language.
+- The Commander decides whether delegation is useful.
+- If the Commander creates an `orchestrator` child, that child is a Worker from
+  the parent perspective and a local Commander for its own children.
+- Leaf Workers perform narrow evidence-producing tasks and do not delegate
+  further.
+- Advisor audits the plan, delegation packet, evidence, exception handling, and
+  final claim. Advisor does not choose the decomposition, worker count, or
+  Worker assignments.
+
 ## Scope
 
 This validates the plugin and skill design through official Hermes plugin
@@ -71,6 +83,10 @@ The focused test proves this sequence:
 16. `advisor_resolution_gate` records Commander continuation.
 17. Final delivery is allowed.
 
+The focused test uses one leaf Worker so the receipt path is deterministic. It
+does not assert that production turns must delegate, use an orchestrator, or
+create a fixed number of leaf Workers.
+
 ## Pi Validation
 
 On the Pi host, update the repository checkout:
@@ -125,6 +141,8 @@ Expected Commander behavior:
 - Run `advisor_audit` for `A1_PLAN` before implementation or mutating actions.
 - Decide whether delegation is useful.
 - If delegating, run `advisor_audit` for `A2_DELEGATION` before delegation.
+- Choose the number and scope of Workers from the task, not from a fixed
+  topology rule.
 - Keep Worker scope narrow and evidence-focused.
 - Include Worker evidence and observed receipts in `A3_FINAL`.
 - Record `advisor_resolution_gate` before final delivery.
