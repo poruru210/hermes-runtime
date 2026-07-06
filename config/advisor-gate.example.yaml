@@ -1,0 +1,65 @@
+advisor_gate:
+  enabled: true
+
+  # Empty provider/model means "use the active Hermes model".
+  # Set these only after the plugin LLM trust gate allows overrides.
+  provider: ""
+  model: ""
+
+  max_input_chars: 64000
+  receipt_path: "~/.hermes/advisor/receipts.jsonl"
+
+  pre_action_gate:
+    require_a1_before_action: true
+    require_a2_before_delegation: true
+    gate_unclassified_tools_before_a1: true
+    # A1 gates tools that can mutate state, execute code, or dispatch work.
+    # Keep this list aligned with the tool names exposed by the active Hermes build.
+    a1_action_tool_names:
+      - apply_patch
+      - delegate_task
+      - edit_file
+      - execute_code
+      - patch
+      - send_message
+      - terminal
+      - write_file
+    # Exact read-only tool names that can run before A1.
+    a1_exempt_tool_names:
+      - advisor_audit
+      - advisor_resolution_gate
+      - browser_snapshot
+      - find_files
+      - list_files
+      - read_file
+      - search_files
+      - view
+      - web_extract
+      - web_search
+    # Optional prefixes for site-local read-only tools. Empty by default so
+    # unknown future tools fail closed.
+    a1_exempt_tool_prefixes: []
+
+  soft_gate:
+    require_a3_exception: true
+    require_a3_final: true
+    require_resolution_gate: true
+    # Parent sessions must pass A3_FINAL before the final response. Subagent
+    # sessions are recorded through subagent_start/subagent_stop receipts and
+    # are not final-gated unless this is set to true.
+    gate_subagents: false
+    # Hermes top-level delegate_task calls run in the background. While a child
+    # is active, defer the parent final gate until the child has reported back.
+    defer_while_subagents_active: true
+
+plugins:
+  enabled:
+    - advisor-gate
+
+  entries:
+    advisor-gate:
+      llm:
+        # Leave overrides disabled by default. The Advisor then follows the
+        # active Hermes model and avoids model availability surprises.
+        allow_provider_override: false
+        allow_model_override: false

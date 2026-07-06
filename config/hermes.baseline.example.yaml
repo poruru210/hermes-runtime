@@ -1,0 +1,61 @@
+# Phase 1 sanitized baseline topology example for Hermes Agent.
+# Source of truth: official docs first, current Hermes source second.
+# This file is intentionally non-secret. Keep API keys, OAuth auth files,
+# Discord tokens, allowed users/roles, and local receipt/log data out of Git.
+
+model:
+  # Verified provider key in docs/source.
+  provider: openai-codex
+  # Verified in hermes_cli/codex_models.py DEFAULT_CODEX_MODELS.
+  # Runtime access still depends on the authenticated account.
+  default: gpt-5.5
+
+agent:
+  # Verified key. Allowed values: xhigh, high, medium, low, minimal, none.
+  reasoning_effort: high
+  max_turns: 90
+
+delegation:
+  # Verified override keys for delegate_task child agents.
+  provider: openai-codex
+  # Verified in hermes_cli/codex_models.py as Codex OAuth research-preview
+  # model. Runtime access may require the right ChatGPT/Codex entitlement.
+  model: gpt-5.3-codex-spark
+  max_iterations: 50
+  reasoning_effort: medium
+
+  # Topology constraints.
+  max_concurrent_children: 3
+  max_spawn_depth: 2
+  orchestrator_enabled: true
+  child_timeout_seconds: 600
+
+auxiliary:
+  compression:
+    # "main" is valid for auxiliary tasks only.
+    provider: main
+    model: gpt-5.5
+
+fallback_providers:
+  # Verified provider key. glm-4.7 appears in the current source catalog for
+  # provider "zai"; validate with your GLM_API_KEY before relying on it.
+  - provider: zai
+    model: glm-4.7
+
+# Smart routing is intentionally disabled by omission:
+# do not add provider_routing or openrouter.min_coding_score for this baseline.
+
+# Discord behavioral settings only. Secrets belong in ~/.hermes/.env:
+# DISCORD_BOT_TOKEN, DISCORD_ALLOWED_USERS or DISCORD_ALLOWED_ROLES, etc.
+discord:
+  require_mention: true
+  auto_thread: true
+  reactions: true
+  history_backfill: true
+  history_backfill_limit: 50
+
+display:
+  platforms:
+    discord:
+      # Current default is false; kept explicit so the baseline is quiet.
+      streaming: false

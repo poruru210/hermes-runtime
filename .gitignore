@@ -1,0 +1,45 @@
+# Python caches/build output.
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ty_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Virtual environments and local tool state.
+.venv/
+venv/
+.mise.local.toml
+
+# Editor/OS noise.
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Codex/local workspace state.
+.agents/
+.codex/
+outputs/
+
+# Hermes local/private artifacts.
+.env
+.env.*
+!.env.example
+auth.json
+*.sqlite
+*.sqlite3
+*.db
+*.jsonl
+logs/
+sessions/
+receipts/
+
+# Local scratch space for target-specific validation, SSH keys, and upstream clones.
+work/

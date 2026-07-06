@@ -1,0 +1,13 @@
+name: advisor-gate
+version: 0.1.0
+description: Review-only Advisor Gate audit tool with pre-action and final-gate hooks
+provides_tools:
+  - advisor_audit
+  - advisor_resolution_gate
+provides_hooks:
+  - subagent_start
+  - subagent_stop
+  - pre_tool_call
+  - post_tool_call
+  - transform_llm_output
+  - pre_verify

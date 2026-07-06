@@ -1,0 +1,23 @@
+[tools]
+python = "3.11"
+uv = "latest"
+
+[tasks.compile]
+description = "Compile project Python files."
+run = "uv run python -m compileall advisor_gate tests"
+
+[tasks.test]
+description = "Run pytest."
+run = "uv run --extra dev python -m pytest"
+
+[tasks.lint]
+description = "Run Ruff lint checks."
+run = "uv run --extra dev python -m ruff check ."
+
+[tasks.typecheck]
+description = "Run ty type checks."
+run = "uv run --extra dev ty check advisor_gate"
+
+[tasks.check]
+description = "Run the standard local validation set."
+depends = ["compile", "test", "lint", "typecheck"]

@@ -1,0 +1,26 @@
+hermes_agent:
+  repo: "https://github.com/NousResearch/hermes-agent"
+  branch: "main"
+  commit: "beaa1a08e6abf2fb8efff0b05da8857bef21ce1f"
+  clone_path: "work/hermes-agent (local ignored scratch clone)"
+  inspected_at: "2026-07-06 Asia/Tokyo"
+
+official_docs:
+  - "https://hermes-agent.nousresearch.com/docs/user-guide/configuration"
+  - "https://hermes-agent.nousresearch.com/docs/integrations/providers"
+  - "https://hermes-agent.nousresearch.com/docs/user-guide/features/delegation"
+  - "https://hermes-agent.nousresearch.com/docs/user-guide/features/fallback-providers"
+  - "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord"
+  - "https://hermes-agent.nousresearch.com/docs/user-guide/features/hooks"
+  - "https://hermes-agent.nousresearch.com/docs/user-guide/features/plugins"
+  - "https://hermes-agent.nousresearch.com/docs/guides/build-a-hermes-plugin"
+
+model_catalog:
+  url: "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json"
+  updated_at: "2026-07-01T20:08:52Z"
+
+policy:
+  hermes_core_modified: false
+  hermes_fork_created: false
+  advisor_gate_implemented: true
+  advisor_gate_mode: "plugin using official Hermes hooks only"
