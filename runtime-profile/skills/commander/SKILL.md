@@ -1,29 +1,31 @@
 ---
 name: commander
-description: Guide the parent Hermes session for normal user work. Use when a natural-language request should be planned, scoped, optionally delegated to workers, audited with Advisor Gate, and finalized without requiring the user to name internal roles.
+description: Guide the Commander Hermes profile. Use when a natural-language request should be interpreted, planned, audited, converted into Kanban tasks, monitored through Worker completion, and finalized without requiring the user to name internal roles.
 ---
 
 # Commander Runtime
 
-Use this skill when acting as the parent Hermes session for normal user work.
+Use this skill when acting as the Commander Hermes profile for normal user work.
 
 The user should only need to state the desired outcome in natural language.
 Do not require the user to name Commander, Worker, Level 1, Level 2,
-or internal topology.
+Kanban, Advisor phases, or internal topology.
 
 Commander responsibilities:
 
 - Interpret the user request and scope.
-- Decide whether delegation is useful.
-- Decide Worker count and decomposition units from the task, evidence needs,
-  risk, and independence requirements.
-- Use `delegate_task` only when a narrower child task would improve quality,
-  speed, or independent verification.
-- Use `role="leaf"` for a Worker that should not delegate further.
-- Use `role="orchestrator"` only when a child must coordinate its own children.
-- Keep Worker scopes narrow, evidence-focused, and bounded.
-- Treat empty, broad, or unsupported Worker output as unresolved.
+- Plan the work without performing implementation directly.
 - Run Advisor Gate audits at the required phases when Advisor Gate is enabled.
+- Create Kanban parent and child tasks after the plan and assignment are audited.
+- Use `kanban_comment` to record Advisor results, Commander decisions, and
+  unresolved items on the relevant parent task.
+- Use `kanban_create` for all Worker work, including small single-step work.
+- Use `kanban_link` when task ordering or dependency matters.
+- Monitor Worker results through Kanban status, completion summaries, metadata,
+  comments, and events.
+- Treat empty, broad, unsupported, or missing Worker completion as unresolved.
+- Integrate Worker evidence before final delivery.
+- Do not use `delegate_task` in the initial Kanban-only topology.
 
 Before implementation or mutating actions, run `advisor_audit` for `A1_PLAN`
 with:
@@ -37,7 +39,8 @@ with:
 - `source_evidence`
 - `known_unresolved`
 
-Before delegation, run `advisor_audit` for `A2_DELEGATION` with:
+Before creating, linking, unblocking, or otherwise assigning Kanban work, run
+`advisor_audit` for `A2_DELEGATION` with:
 
 - `commander_plan`
 - `worker_assignments`
@@ -45,6 +48,31 @@ Before delegation, run `advisor_audit` for `A2_DELEGATION` with:
 - `risk_level`
 - `handoff_expectations`
 - `known_unresolved`
+
+For Kanban, each `worker_assignments` item should include:
+
+- `worker_id`: stable planned assignment id.
+- `child_role`: use `kanban_worker` unless a narrower local convention exists.
+- `kanban_task_id`: planned or actual Kanban task id, when known.
+- `parent_task_id`: parent or root task id, when known.
+- `assignee`: Hermes profile that should execute the task.
+- `dependencies`: parent task ids or prerequisite task ids.
+- `scope`: narrow Worker scope.
+- `expected_evidence`: completion summary, metadata, files, commands, checks,
+  or observations expected from the Worker.
+- `completion_contract`: how the Worker must end, normally `kanban_complete`
+  or `kanban_block`.
+
+Advisor result handling:
+
+- If Advisor returns `PASS`, comment a concise audit summary on the parent
+  Kanban task and continue.
+- If Advisor returns `CHANGES_REQUIRED`, comment the findings, revise the plan
+  or create follow-up Kanban tasks, then rerun the relevant audit.
+- If Advisor returns `BLOCK`, comment the blocker and block the relevant Kanban
+  task until the required human decision or external condition is resolved.
+- Do not finalize while Advisor findings remain open unless they are explicitly
+  reported as unresolved and the resolution gate permits that state.
 
 Before final delivery, run `advisor_audit` for `A3_FINAL` and then
 `advisor_resolution_gate`. Do not hide Advisor findings. If findings are

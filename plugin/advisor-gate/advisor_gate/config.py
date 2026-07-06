@@ -11,10 +11,22 @@ DEFAULT_A1_ACTION_TOOL_NAMES = (
     "delegate_task",
     "edit_file",
     "execute_code",
+    "kanban_block",
+    "kanban_comment",
+    "kanban_complete",
+    "kanban_create",
+    "kanban_link",
+    "kanban_unblock",
     "patch",
     "send_message",
     "terminal",
     "write_file",
+)
+DEFAULT_A2_ASSIGNMENT_TOOL_NAMES = (
+    "delegate_task",
+    "kanban_create",
+    "kanban_link",
+    "kanban_unblock",
 )
 DEFAULT_A1_EXEMPT_TOOL_NAMES = (
     "advisor_audit",
@@ -39,8 +51,9 @@ class AdvisorGateConfig:
     max_input_chars: int = 64_000
     receipt_path: str = "~/.hermes/advisor/receipts.jsonl"
     require_a1_before_action: bool = True
-    require_a2_before_delegation: bool = True
+    require_a2_before_assignment: bool = True
     a1_action_tool_names: tuple[str, ...] = DEFAULT_A1_ACTION_TOOL_NAMES
+    a2_assignment_tool_names: tuple[str, ...] = DEFAULT_A2_ASSIGNMENT_TOOL_NAMES
     a1_exempt_tool_names: tuple[str, ...] = DEFAULT_A1_EXEMPT_TOOL_NAMES
     a1_exempt_tool_prefixes: tuple[str, ...] = DEFAULT_A1_EXEMPT_TOOL_PREFIXES
     gate_unclassified_tools_before_a1: bool = True
@@ -86,6 +99,13 @@ def load_plugin_config() -> AdvisorGateConfig:
         )
     else:
         action_tool_names = DEFAULT_A1_ACTION_TOOL_NAMES
+    configured_assignment_tools = pre_action_gate.get("a2_assignment_tool_names")
+    if isinstance(configured_assignment_tools, list):
+        assignment_tool_names = tuple(
+            str(item).strip() for item in configured_assignment_tools if str(item).strip()
+        )
+    else:
+        assignment_tool_names = DEFAULT_A2_ASSIGNMENT_TOOL_NAMES
     configured_exempt_tools = pre_action_gate.get("a1_exempt_tool_names")
     if isinstance(configured_exempt_tools, list):
         exempt_tool_names = tuple(
@@ -111,10 +131,14 @@ def load_plugin_config() -> AdvisorGateConfig:
         ),
         receipt_path=str(raw.get("receipt_path") or "~/.hermes/advisor/receipts.jsonl"),
         require_a1_before_action=bool(pre_action_gate.get("require_a1_before_action", True)),
-        require_a2_before_delegation=bool(
-            pre_action_gate.get("require_a2_before_delegation", True)
+        require_a2_before_assignment=bool(
+            pre_action_gate.get(
+                "require_a2_before_assignment",
+                pre_action_gate.get("require_a2_before_delegation", True),
+            )
         ),
         a1_action_tool_names=action_tool_names,
+        a2_assignment_tool_names=assignment_tool_names,
         a1_exempt_tool_names=exempt_tool_names,
         a1_exempt_tool_prefixes=exempt_tool_prefixes,
         gate_unclassified_tools_before_a1=bool(

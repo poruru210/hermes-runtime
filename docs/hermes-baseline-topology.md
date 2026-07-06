@@ -1,5 +1,9 @@
 # Hermes Baseline Topology
 
+> Historical note: this document describes the earlier official Hermes
+> delegation baseline. The current runtime workflow is Kanban-only; use
+> `docs/exec-plan.md` and `docs/architecture.md` for the active design.
+
 ## Purpose
 
 This document maps the requested baseline topology to official Hermes Agent

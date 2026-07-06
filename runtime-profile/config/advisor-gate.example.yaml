@@ -11,7 +11,7 @@ advisor_gate:
 
   pre_action_gate:
     require_a1_before_action: true
-    require_a2_before_delegation: true
+    require_a2_before_assignment: true
     gate_unclassified_tools_before_a1: true
     # A1 gates tools that can mutate state, execute code, or dispatch work.
     # Keep this list aligned with the tool names exposed by the active Hermes build.
@@ -20,10 +20,23 @@ advisor_gate:
       - delegate_task
       - edit_file
       - execute_code
+      - kanban_block
+      - kanban_comment
+      - kanban_complete
+      - kanban_create
+      - kanban_link
+      - kanban_unblock
       - patch
       - send_message
       - terminal
       - write_file
+    # A2 gates tools that create or alter execution assignments. `delegate_task`
+    # remains for compatibility, but the initial topology uses Kanban only.
+    a2_assignment_tool_names:
+      - delegate_task
+      - kanban_create
+      - kanban_link
+      - kanban_unblock
     # Exact read-only tool names that can run before A1.
     a1_exempt_tool_names:
       - advisor_audit
@@ -48,8 +61,8 @@ advisor_gate:
     # sessions are recorded through subagent_start/subagent_stop receipts and
     # are not final-gated unless this is set to true.
     gate_subagents: false
-    # Hermes top-level delegate_task calls run in the background. While a child
-    # is active, defer the parent final gate until the child has reported back.
+    # Compatibility for Hermes background subagents. The initial topology is
+    # Kanban-only, but this remains safe if delegate_task is used later.
     defer_while_subagents_active: true
 
 plugins:

@@ -1,5 +1,10 @@
 # Advisor Fit Against Baseline Topology
 
+> Historical note: this document records the earlier `delegate_task`-based
+> topology analysis. The current implementation plan is Kanban-only. Use
+> `docs/exec-plan.md`, `docs/architecture.md`, and
+> `runtime-profile/runbooks/live-smoke.md` as the current source of truth.
+
 ## Source Images
 
 Two primary design images define the target:

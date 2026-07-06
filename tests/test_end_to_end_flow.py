@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 from advisor_gate.audit_handlers import advisor_audit_handler
 from advisor_gate.config import AdvisorGateConfig
-from advisor_gate.event_hooks import on_post_tool_call, on_subagent_start, on_subagent_stop
+from advisor_gate.event_hooks import on_post_tool_call
 from advisor_gate.final_gate import on_final_delivery_gate
 from advisor_gate.pre_tool_gate import on_pre_tool_call
 from advisor_gate.resolution_handlers import advisor_resolution_gate_handler
@@ -33,19 +33,18 @@ class PassLlm:
 
 def _plan_packet():
     return {
-        "user_message": "Verify the Commander, Worker, Advisor flow.",
-        "commander_interpretation": (
-            "Use Hermes parent and child session evidence; do not modify Hermes core."
-        ),
+        "user_message": "Verify the Commander, Kanban Worker, Advisor flow.",
+        "commander_interpretation": "Use Hermes Kanban task evidence; do not modify Hermes core.",
         "task_plan": [
             {"step": "Run A1 plan audit."},
-            {"step": "Run A2 delegation audit."},
-            {"step": "Capture Worker start and stop receipts."},
+            {"step": "Run A2 Kanban assignment audit."},
+            {"step": "Create a Kanban task for a Worker profile."},
+            {"step": "Capture Worker kanban_show and kanban_complete evidence."},
             {"step": "Handle one tool exception and final audit."},
         ],
         "coverage_table": [
             {"requirement": "Commander plan", "coverage": "A1_PLAN receipt"},
-            {"requirement": "Worker role", "coverage": "child_role receipt"},
+            {"requirement": "Worker task", "coverage": "Kanban task assignment"},
             {"requirement": "Advisor final gate", "coverage": "A3_FINAL and resolution"},
         ],
         "risk_level": "medium",
@@ -55,23 +54,32 @@ def _plan_packet():
     }
 
 
-def _delegation_packet():
+def _assignment_packet():
     return {
-        "commander_plan": "Delegate one narrow verification task to a leaf Worker.",
+        "commander_plan": "Create one narrow Kanban task for a Worker profile.",
         "worker_assignments": [
             {
-                "worker_id": "worker-leaf-1",
-                "child_role": "leaf",
-                "scope": "Inspect receipt evidence and return a concise result.",
+                "worker_id": "kanban-worker-1",
+                "child_role": "kanban_worker",
+                "kanban_task_id": "planned-task-1",
+                "parent_task_id": "root-task-1",
+                "assignee": "default",
+                "dependencies": [],
+                "scope": "Read the assigned Kanban task and return a concise result.",
                 "expected_evidence": [
-                    {"type": "receipt", "description": "subagent_start/subagent_stop"},
-                    {"type": "result", "description": "Worker completion summary"},
+                    {"type": "kanban", "description": "kanban_show read of the assigned task"},
+                    {"type": "kanban", "description": "kanban_complete summary and metadata"},
                 ],
+                "completion_contract": "Worker must finish with kanban_complete or kanban_block.",
             }
         ],
-        "empty_result_policy": "Treat empty Worker output as unresolved and re-scope.",
+        "empty_result_policy": (
+            "Treat empty or missing Kanban completion as unresolved and re-scope."
+        ),
         "risk_level": "medium",
-        "handoff_expectations": "Worker result must be reflected in A3_FINAL.",
+        "handoff_expectations": (
+            "Kanban completion summary and metadata must be reflected in A3_FINAL."
+        ),
         "known_unresolved": [],
     }
 
@@ -80,8 +88,9 @@ def _final_packet(final_draft: str):
     return {
         "actions_taken": [
             {"summary": "A1 plan audit passed."},
-            {"summary": "A2 delegation audit passed."},
-            {"summary": "Worker leaf session completed with receipt evidence."},
+            {"summary": "A2 Kanban assignment audit passed."},
+            {"summary": "Commander created a Kanban task for the Worker profile."},
+            {"summary": "Worker completed the Kanban task with summary and metadata."},
             {"summary": "A3 exception audit passed after a planned failed tool event."},
         ],
         "tests_or_checks": [
@@ -89,7 +98,7 @@ def _final_packet(final_draft: str):
         ],
         "known_unresolved": [],
         "final_answer_draft": final_draft,
-        "flow_summary": "A1 -> A2 -> Worker receipt -> A3_EXCEPTION -> A3_FINAL.",
+        "flow_summary": "A1 -> A2 -> Kanban task -> Worker completion -> A3_EXCEPTION -> A3_FINAL.",
     }
 
 
@@ -121,7 +130,7 @@ def _audit(
     return json.loads(raw)
 
 
-def test_commander_worker_advisor_flow_records_evidence_and_allows_final(tmp_path):
+def test_commander_kanban_worker_advisor_flow_records_evidence_and_allows_final(tmp_path):
     store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
     config = AdvisorGateConfig()
     llm = PassLlm()
@@ -163,7 +172,7 @@ def test_commander_worker_advisor_flow_records_evidence_and_allows_final(tmp_pat
     blocked_before_a2 = on_pre_tool_call(
         store,
         config,
-        tool_name="delegate_task",
+        tool_name="kanban_create",
         session_id=session_id,
         turn_id=turn_id,
     )
@@ -177,42 +186,40 @@ def test_commander_worker_advisor_flow_records_evidence_and_allows_final(tmp_pat
         session_id=session_id,
         turn_id=turn_id,
         phase="A2_DELEGATION",
-        packet=_delegation_packet(),
+        packet=_assignment_packet(),
     )
     assert a2["policy_action"] == "continue"
     assert (
         on_pre_tool_call(
             store,
             config,
-            tool_name="delegate_task",
+            tool_name="kanban_create",
             session_id=session_id,
             turn_id=turn_id,
         )
         is None
     )
 
-    on_subagent_start(
+    on_post_tool_call(
         store,
-        parent_session_id=session_id,
-        child_session_id="worker-session-1",
-        child_role="leaf",
-    )
-    active_gate = on_final_delivery_gate(
-        store,
-        config,
         session_id=session_id,
-        final_response=final_draft,
+        tool_name="kanban_create",
+        status="success",
+        result='{"task_id": "t-kanban-1", "status": "ready"}',
     )
-    assert active_gate is not None
-    assert "subagent work is still active" in active_gate["message"]
-
-    on_subagent_stop(
+    on_post_tool_call(
         store,
-        parent_session_id=session_id,
-        child_session_id="worker-session-1",
-        child_role="leaf",
-        child_status="completed",
-        child_summary="receipt evidence inspected",
+        session_id=session_id,
+        tool_name="kanban_show",
+        status="success",
+        result='{"task_id": "t-kanban-1", "title": "Worker check"}',
+    )
+    on_post_tool_call(
+        store,
+        session_id=session_id,
+        tool_name="kanban_complete",
+        status="success",
+        result='{"task_id": "t-kanban-1", "summary": "Worker completed with evidence"}',
     )
 
     on_post_tool_call(
@@ -264,9 +271,8 @@ def test_commander_worker_advisor_flow_records_evidence_and_allows_final(tmp_pat
     assert a3_final["policy_action"] == "continue"
 
     prompt_packet = json.loads(llm.calls[-1]["input"][0]["text"])
-    observed = prompt_packet["payload"]["observed_subagents"]
-    assert observed[0]["child_session_id"] == "worker-session-1"
-    assert observed[0]["child_role"] == "leaf"
+    actions = prompt_packet["payload"]["actions_taken"]
+    assert any("Kanban task" in item["summary"] for item in actions)
 
     resolution_required = on_final_delivery_gate(
         store,
@@ -309,5 +315,5 @@ def test_commander_worker_advisor_flow_records_evidence_and_allows_final(tmp_pat
     assert "A3_EXCEPTION" in phases
     assert "A3_FINAL" in phases
     assert "RESOLUTION_GATE" in phases
-    assert any(entry.get("source") == "subagent_start" for entry in entries)
-    assert any(entry.get("source") == "subagent_stop" for entry in entries)
+    assert any(entry.get("extra", {}).get("tool_name") == "kanban_create" for entry in entries)
+    assert any(entry.get("extra", {}).get("tool_name") == "kanban_complete" for entry in entries)

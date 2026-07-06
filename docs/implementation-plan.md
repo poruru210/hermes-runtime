@@ -10,8 +10,8 @@
 - Phase 5: hook-based receipts and soft gate.
 - Phase 6: validation docs and no-core plugin decision docs.
 - Phase 7: Advisor ResolutionGate.
-- Phase 8: official `pre_tool_call` A1/A2 gate for configured action tools and
-  `delegate_task`.
+- Phase 8: official `pre_tool_call` A1/A2 gate for configured action tools,
+  compatibility `delegate_task`, and Kanban assignment tools.
 - Phase 9: final-gate enforcement that observed tool/runtime failures must have
   a later passing `A3_EXCEPTION` audit.
 - Phase 10: receipt freshness enforcement for same-turn A1/A2 and event-fresh
@@ -59,8 +59,10 @@
 4. Plugin calls `ctx.llm.complete_structured()` with AdvisorResult schema.
 5. Plugin validates result, writes JSONL receipt, and returns JSON to Hermes.
 6. `pre_tool_call` blocks configured action tools and unclassified tools until
-   same-turn A1 passes, and blocks `delegate_task` until same-turn A2 passes.
-   For Advisor tools themselves, it records tool context for receipt freshness.
+   same-turn A1 passes, and blocks configured assignment tools such as
+   `kanban_create`, `kanban_link`, `kanban_unblock`, and compatibility
+   `delegate_task` until same-turn A2 passes. For Advisor tools themselves, it
+   records tool context for receipt freshness.
 7. Subagent/tool hooks write evidence receipts.
 8. Failed tool/runtime events are marked as requiring `A3_EXCEPTION`; final
    gates continue the Commander loop until a later A3-Exception audit passes.

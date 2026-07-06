@@ -36,12 +36,14 @@ used by Hermes core.
 
 `pre_tool_call` can return a directive before a tool runs. Advisor Gate uses the
 official hook to block configured action tools until A1 passes and to block
-`delegate_task` until A2 passes. It also records `advisor_audit` /
-`advisor_resolution_gate` invocation context so the subsequent tool receipt can
-carry `turn_id`, `tool_call_id`, and `api_request_id` even when the registry
-handler itself receives only `session_id` / `task_id`. When Hermes provides a
-`turn_id`, A1/A2 receipts must have the same `call_context.turn_id`; stale
-receipts from earlier turns are not accepted.
+configured assignment tools such as `kanban_create`, `kanban_link`,
+`kanban_unblock`, and compatibility `delegate_task` until A2 passes. It also
+records `advisor_audit` / `advisor_resolution_gate` invocation context so the
+subsequent tool receipt can carry `turn_id`, `tool_call_id`, and
+`api_request_id` even when the registry handler itself receives only
+`session_id` / `task_id`. When Hermes provides a `turn_id`, A1/A2 receipts must
+have the same `call_context.turn_id`; stale receipts from earlier turns are not
+accepted.
 
 `post_tool_call` is observer-only for policy purposes, so Advisor Gate writes
 evidence metadata and redacts obvious secret-like keys.
@@ -97,17 +99,28 @@ advisor_gate:
   receipt_path: "~/.hermes/advisor/receipts.jsonl"
   pre_action_gate:
     require_a1_before_action: true
-    require_a2_before_delegation: true
+    require_a2_before_assignment: true
     gate_unclassified_tools_before_a1: true
     a1_action_tool_names:
       - apply_patch
       - delegate_task
       - edit_file
       - execute_code
+      - kanban_block
+      - kanban_comment
+      - kanban_complete
+      - kanban_create
+      - kanban_link
+      - kanban_unblock
       - patch
       - send_message
       - terminal
       - write_file
+    a2_assignment_tool_names:
+      - delegate_task
+      - kanban_create
+      - kanban_link
+      - kanban_unblock
     a1_exempt_tool_names:
       - advisor_audit
       - advisor_resolution_gate
@@ -150,8 +163,10 @@ Advisor Gate registers two tools:
   resolved, deferred, or rejected findings.
 
 Configured action tools and unclassified tools are allowed only when the latest
-current-turn A1 receipt passes. `delegate_task` is allowed only when both the
-latest current-turn A1 and A2 receipts pass.
+current-turn A1 receipt passes. Configured assignment tools are allowed only
+when both the latest current-turn A1 and A2 receipts pass. The initial runtime
+profile uses Kanban assignment tools; `delegate_task` remains only as a
+compatibility target.
 
 Before verification/final delivery in coding turns, Advisor Gate asks Hermes to
 continue only when:

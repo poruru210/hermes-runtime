@@ -15,20 +15,26 @@ agent:
   reasoning_effort: high
   max_turns: 90
 
-delegation:
-  # Verified override keys for delegate_task child agents.
-  provider: openai-codex
-  # Verified in hermes_cli/codex_models.py as Codex OAuth research-preview
-  # model. Runtime access may require the right ChatGPT/Codex entitlement.
-  model: gpt-5.3-codex-spark
-  max_iterations: 50
-  reasoning_effort: medium
+# Commander profile baseline.
+# This profile plans, audits, creates Kanban tasks, links dependencies, comments
+# Advisor results, and integrates Worker completions. It should not perform
+# implementation work directly.
+toolsets:
+  - kanban
+  - advisor_gate
+  - skills
 
-  # Topology constraints.
-  max_concurrent_children: 3
-  max_spawn_depth: 2
-  orchestrator_enabled: true
-  child_timeout_seconds: 600
+kanban:
+  # Use a named Commander profile as the orchestrator surface. The profile must
+  # have the kanban toolset in its own config.yaml; passing "-t kanban" alone is
+  # not sufficient for kanban_create in normal chat.
+  orchestrator_profile: commander
+  default_assignee: default
+  dispatch_in_gateway: true
+
+# delegate_task is intentionally not part of the initial runtime topology.
+# Keep delegation config out of the baseline unless a future ADR reintroduces it
+# for a bounded non-Kanban fast path.
 
 auxiliary:
   compression:

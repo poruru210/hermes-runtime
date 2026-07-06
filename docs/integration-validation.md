@@ -1,5 +1,10 @@
 # Integration Validation
 
+> Historical note: this document records an earlier validation snapshot. The
+> current runtime target is Kanban-only. Use `runtime-profile/runbooks/live-smoke.md`
+> for the current validation procedure and `mise run check` output from the
+> current worktree for the latest result.
+
 ## Local Checks Run
 
 ```bash

@@ -1,6 +1,6 @@
 ---
 name: advisor-flow
-description: Run the Hermes Advisor Gate workflow. Use when work must pass A1 plan, A2 delegation, A3 exception, A3 final, and resolution recording before final delivery while keeping Advisor review-only.
+description: Run the Hermes Advisor Gate workflow. Use when Kanban-centered work must pass A1 plan, A2 assignment, A3 exception, A3 final, and resolution recording before final delivery while keeping Advisor review-only.
 ---
 
 # Advisor Flow Runtime
@@ -15,7 +15,8 @@ findings after A3-Final.
 Run audits at these points:
 
 - `A1_PLAN`: before implementation, with task, plan, constraints, and evidence.
-- `A2_DELEGATION`: after delegation planning or subagent fanout decisions.
+- `A2_DELEGATION`: after Kanban task assignment planning, before creating,
+  linking, or unblocking work.
 - `A3_EXCEPTION`: after tool, model, runtime, or subagent failures.
 - `A3_FINAL`: before final response, with final draft, verification evidence,
   known unresolved items, receipts, and changed files.
@@ -59,7 +60,7 @@ Example:
 
 For `A2_DELEGATION`, the packet must have this shape:
 
-- `commander_plan`: the parent/Commander plan that justifies delegation.
+- `commander_plan`: the Commander plan that justifies Kanban assignment.
 - `worker_assignments`: non-empty list. Each item must include `worker_id`,
   `child_role`, `scope`, and `expected_evidence`.
 - `empty_result_policy`: what the Commander will do if a worker returns no useful
@@ -68,9 +69,17 @@ For `A2_DELEGATION`, the packet must have this shape:
 - `handoff_expectations`: optional expectations for exception and final handoff.
 - `known_unresolved`: optional list of unresolved items.
 
-Use the exact `child_role` value supplied by Hermes hook context when it is
-known. If delegation has not started yet, state the intended child role and make
-the scope narrow enough for Advisor to audit.
+For Kanban assignments, use `child_role="kanban_worker"` unless a narrower local
+role is intentionally defined. Add these fields when known:
+
+- `kanban_task_id`
+- `parent_task_id`
+- `assignee`
+- `dependencies`
+- `completion_contract`
+
+Make the scope narrow enough for Advisor to audit before any `kanban_create`,
+`kanban_link`, or `kanban_unblock` call.
 
 Example:
 
@@ -78,16 +87,21 @@ Example:
 {
   "phase": "A2_DELEGATION",
   "packet": {
-    "commander_plan": "Delegate independent verification of receipt behavior.",
+    "commander_plan": "Create a Kanban task for independent verification of receipt behavior.",
     "worker_assignments": [
       {
         "worker_id": "verification-worker",
-        "child_role": "leaf",
+        "child_role": "kanban_worker",
+        "kanban_task_id": "planned-verification-task",
+        "parent_task_id": "root-task-id",
+        "assignee": "default",
+        "dependencies": [],
         "scope": "Inspect receipt records and run focused tests only.",
         "expected_evidence": [
           {"type": "test", "description": "Receipt summary test result"},
           {"type": "source", "description": "Relevant hook or store code"}
-        ]
+        ],
+        "completion_contract": "Finish with kanban_complete(summary, metadata) or kanban_block(reason)."
       }
     ],
     "empty_result_policy": "Treat empty or over-broad output as unresolved and re-scope.",
@@ -110,6 +124,10 @@ When subagents were used, include worker evidence in `actions_taken` or
 `tests_or_checks`. The plugin also adds observed child session records to A2/A3
 audit packets when Hermes provides parent/child hook data.
 
+When Kanban was used, include Kanban task ids, completion summaries, completion
+metadata, comments, and unresolved blocked tasks in `actions_taken` or
+`tests_or_checks`.
+
 Treat verdicts as follows:
 
 - `PASS`: continue.
@@ -120,8 +138,9 @@ The plugin enforces A1/A2 before action:
 
 - Configured mutating, executing, or dispatching tools are blocked until
   `A1_PLAN` passes for the current turn.
-- `delegate_task` is blocked until both `A1_PLAN` and `A2_DELEGATION` pass for
-  the current turn.
+- Configured assignment tools such as `kanban_create`, `kanban_link`,
+  `kanban_unblock`, and compatibility `delegate_task` are blocked until both
+  `A1_PLAN` and `A2_DELEGATION` pass for the current turn.
 - If a tool/runtime failure is observed, final delivery is blocked until a
   later `A3_EXCEPTION` audit passes.
 - `A3_FINAL` must be run after the latest relevant tool, subagent, or exception
@@ -137,6 +156,15 @@ Before final delivery, call `advisor_resolution_gate`:
   `rejected` with a reason and evidence.
 - Do not hide unresolved or deferred findings; include them in `known_unresolved`
   and in the final answer.
+
+Record Advisor results on Kanban:
+
+- For `PASS`, the Commander should write a concise `kanban_comment` on the
+  parent task.
+- For `CHANGES_REQUIRED`, the Commander should comment the findings and create
+  or reopen Kanban work needed to resolve them.
+- For `BLOCK`, the Commander should block the relevant task with the unresolved
+  condition and stop final delivery.
 
 Do not hide degraded Advisor behavior. If the audit cannot run or returns
 invalid JSON, keep the degraded receipt and report it honestly.

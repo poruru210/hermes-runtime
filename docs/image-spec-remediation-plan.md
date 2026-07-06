@@ -1,5 +1,9 @@
 # 画像仕様未達項目の解消方針
 
+> 現行方針: 初期ワークフローは Kanban-only とする。旧来の `delegate_task`
+> 前提で書かれた「委任」は、現在は Kanban の task assignment として扱う。
+> 最新の実行計画は `docs/exec-plan.md` を参照する。
+
 ## 目的
 
 この文書は、`docs/image-spec-compliance.md` の適合表をもとに、未達または

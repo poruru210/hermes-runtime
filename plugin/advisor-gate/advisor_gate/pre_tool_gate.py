@@ -22,6 +22,10 @@ def _action_tool_names(config: AdvisorGateConfig) -> set[str]:
     return {name for name in config.a1_action_tool_names if name}
 
 
+def _assignment_tool_names(config: AdvisorGateConfig) -> set[str]:
+    return {name for name in config.a2_assignment_tool_names if name}
+
+
 def _exempt_tool_names(config: AdvisorGateConfig) -> set[str]:
     return {name for name in config.a1_exempt_tool_names if name}
 
@@ -113,9 +117,10 @@ def _block_pre_tool_call_message(
         )
     else:
         packet_hint = (
-            "Run advisor_audit with phase='A2_DELEGATION' before delegating work. "
-            "The packet should include the Commander plan, Worker scope, expected "
-            "evidence, exception/final handoff expectations, and risk_level."
+            "Run advisor_audit with phase='A2_DELEGATION' before assigning work. "
+            "The packet should include the Commander plan, Kanban task or Worker "
+            "assignments, assignees, scope, expected evidence, handoff "
+            "expectations, empty-result policy, and risk_level."
         )
     return {
         "action": "block",
@@ -183,7 +188,7 @@ def on_pre_tool_call(
                 reason=reason,
             )
 
-    if config.require_a2_before_delegation and tool_name == "delegate_task":
+    if config.require_a2_before_assignment and tool_name in _assignment_tool_names(config):
         latest_a2_index = latest_passed_audit_index(
             store,
             session_id=effective_session,
@@ -192,9 +197,9 @@ def on_pre_tool_call(
         )
         if latest_a2_index is None:
             reason = (
-                "A2_DELEGATION has not passed for this turn before delegation."
+                "A2_DELEGATION has not passed for this turn before work assignment."
                 if turn_id
-                else "A2_DELEGATION has not passed before delegation."
+                else "A2_DELEGATION has not passed before work assignment."
             )
             _append_blocked_pre_tool_call(
                 store,

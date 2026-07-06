@@ -29,7 +29,9 @@ ADVISOR_AUDIT_SCHEMA = {
                     "commander_interpretation, task_plan, coverage_table, and "
                     "risk_level. A2 requires commander_plan, worker_assignments "
                     "with worker_id, child_role, scope, expected_evidence, plus "
-                    "empty_result_policy and risk_level. A3_FINAL requires "
+                    "empty_result_policy and risk_level. For Kanban, include "
+                    "kanban_task_id, parent_task_id, assignee, dependencies, and "
+                    "completion_contract on each assignment when known. A3_FINAL requires "
                     "actions_taken, tests_or_checks, known_unresolved, "
                     "final_answer_draft, and flow_summary."
                 ),

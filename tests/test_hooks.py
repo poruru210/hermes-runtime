@@ -268,6 +268,39 @@ def test_pre_tool_call_allows_delegation_after_a1_and_a2_pass(tmp_path):
     )
 
 
+def test_pre_tool_call_blocks_kanban_assignment_until_a2_passes(tmp_path):
+    store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
+    _append_pass_phase(store, "s1", AdvisorPhase.A1_PLAN)
+
+    response = on_pre_tool_call(
+        store,
+        AdvisorGateConfig(),
+        tool_name="kanban_create",
+        session_id="s1",
+    )
+
+    assert response is not None
+    assert response["action"] == "block"
+    assert "A2_DELEGATION" in response["message"]
+    assert "work assignment" in response["message"]
+
+
+def test_pre_tool_call_allows_kanban_assignment_after_a1_and_a2_pass(tmp_path):
+    store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
+    _append_pass_phase(store, "s1", AdvisorPhase.A1_PLAN)
+    _append_pass_phase(store, "s1", AdvisorPhase.A2_DELEGATION)
+
+    assert (
+        on_pre_tool_call(
+            store,
+            AdvisorGateConfig(),
+            tool_name="kanban_create",
+            session_id="s1",
+        )
+        is None
+    )
+
+
 def test_pre_tool_call_blocks_unclassified_tool_by_default(tmp_path):
     store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
 

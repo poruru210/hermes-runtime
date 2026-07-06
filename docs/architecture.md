@@ -28,8 +28,8 @@ tests/
 |---|---|
 | `plugin/advisor-gate/` | Advisor Gate plugin implementation: tools, hooks, schemas, policy, receipt store |
 | `runtime-profile/config/` | Sanitized Hermes runtime configuration examples |
-| `runtime-profile/skills/commander/` | Commander behavior guidance for the parent Hermes session |
-| `runtime-profile/skills/worker/` | Worker behavior guidance for delegated child sessions |
+| `runtime-profile/skills/commander/` | Commander behavior guidance for the Kanban orchestrator profile |
+| `runtime-profile/skills/worker/` | Worker behavior guidance for Kanban-dispatched task sessions |
 | `runtime-profile/skills/advisor-flow/` | Advisor audit workflow guidance |
 | `runtime-profile/runbooks/` | Pi install, live smoke, and rollback operations |
 | `runtime-profile/locks/` | Non-secret runtime and plugin version locks |
@@ -43,18 +43,21 @@ Hermes core is not forked or patched.
 Commander and Worker are runtime roles expressed through existing Hermes
 behavior:
 
-- Commander: parent Hermes session that interprets the user request, plans,
-  delegates if useful, and resolves Advisor findings.
-- Worker: child Hermes session created by `delegate_task`.
-- Leaf Worker: child with `role="leaf"` that does not delegate further.
-- Orchestrator Worker: child with `role="orchestrator"` that may coordinate its
-  own children when justified.
+- Commander: dedicated Hermes profile that interprets the user request, plans,
+  runs Advisor audits, creates Kanban task graphs, records Advisor results on
+  Kanban, and resolves Advisor findings.
+- Worker: Hermes profile spawned from a Kanban task. It reads its assigned task
+  with `kanban_show` and finishes with `kanban_complete` or `kanban_block`.
 - Advisor: review-only plugin tools and hooks implemented by
   `plugin/advisor-gate`.
 
-Advisor does not choose decomposition, worker count, or Worker assignments. It
-audits the Commander-selected plan, delegation, evidence, exception handling,
-and final answer.
+Advisor does not choose decomposition, worker count, Kanban tasks, or Worker
+assignments. It audits the Commander-selected plan, assignment, evidence,
+exception handling, and final answer.
+
+The initial runtime topology is Kanban-only. `delegate_task` remains a Hermes
+feature and a compatibility gate target, but it is not part of the baseline
+workflow.
 
 ## Source Of Truth
 

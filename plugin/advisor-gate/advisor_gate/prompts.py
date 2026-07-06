@@ -21,11 +21,16 @@ PHASE_INSTRUCTIONS = {
         "coverage_table, and risk_level."
     ),
     "A2_DELEGATION": (
-        "Audit delegation. Check whether subagent roles, scope, evidence, and "
-        "fanout/depth constraints match the requested topology. The packet must "
-        "include commander_plan, worker_assignments, empty_result_policy, and "
-        "risk_level. If observed_subagents are supplied, use child_role and "
-        "parent/child session evidence when judging delegation."
+        "Audit work assignment. Check whether Kanban task assignments or "
+        "subagent assignments have clear assignees, scope, expected evidence, "
+        "dependency relationships, empty-result handling, and final handoff "
+        "expectations. The packet must include commander_plan, "
+        "worker_assignments, empty_result_policy, and risk_level. When Kanban "
+        "is used, treat worker_assignments as planned task assignments and use "
+        "kanban_task_id, parent_task_id, assignee, dependencies, and "
+        "completion_contract fields when supplied. If observed_subagents are "
+        "supplied, use child_role and parent/child session evidence when "
+        "judging assignment."
     ),
     "A3_EXCEPTION": (
         "Audit an exception path. Check whether failures are captured honestly, "

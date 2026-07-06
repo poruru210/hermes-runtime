@@ -1,46 +1,31 @@
-# End-to-End Validation Runbook
+# Kanban-Only End-to-End Validation Runbook
 
-This runbook validates the Advisor overlay without patching Hermes core.
+This runbook validates the Hermes Runtime workflow without patching Hermes core.
 
-The validation defines roles at the scenario level:
+The initial runtime topology is Kanban-only:
 
-| Scenario role | Hermes-backed evidence | Advisor responsibility |
+- The user gives a natural-language request.
+- The Commander profile plans the work.
+- Advisor Gate audits the plan and assignment.
+- Commander records Advisor results on Kanban.
+- Commander creates Kanban tasks for Worker profiles.
+- Workers read tasks with `kanban_show` and finish with `kanban_complete` or
+  `kanban_block`.
+- Commander integrates Kanban evidence and runs final Advisor checks.
+
+`delegate_task` is not part of this initial smoke.
+
+## Roles
+
+| Role | Runtime evidence | Responsibility |
 |---|---|---|
-| User | The validation request in the A1 packet | Source request to compare against the plan |
-| Commander | Parent `session_id` and the caller of Advisor tools | Plan, delegation, exception handling, final decision |
-| Worker | Child `session_id` plus `child_role` from Hermes subagent hooks | Narrow execution result and evidence |
-| Advisor | `advisor_audit` and `advisor_resolution_gate` | Review-only audit, findings, verdicts, receipts |
-| Receipt | Advisor JSONL records | Evidence that the flow ran in order |
+| User | Natural-language prompt | State the desired outcome |
+| Commander | `commander` profile, session id, Kanban comments | Plan, audit calls, Kanban task creation, integration |
+| Worker | Kanban task assignee profile and task run | Execute assigned task only |
+| Advisor | `advisor_audit` and `advisor_resolution_gate` receipts | Review-only audit |
+| Kanban | Task body, comments, events, runs, completion metadata | Durable source of truth |
 
-Responsibility boundaries:
-
-- The User states the desired outcome in natural language.
-- The Commander decides whether delegation is useful.
-- If the Commander creates an `orchestrator` child, that child is a Worker from
-  the parent perspective and a local Commander for its own children.
-- Leaf Workers perform narrow evidence-producing tasks and do not delegate
-  further.
-- Advisor audits the plan, delegation packet, evidence, exception handling, and
-  final claim. Advisor does not choose the decomposition, worker count, or
-  Worker assignments.
-
-## Scope
-
-This validates the plugin and skill design through official Hermes plugin
-surfaces:
-
-- `advisor_audit`
-- `advisor_resolution_gate`
-- `pre_tool_call`
-- `post_tool_call`
-- `subagent_start`
-- `subagent_stop`
-- `pre_verify` / final delivery gate behavior
-
-It does not validate Hermes standard session-history integration. That remains
-outside the plugin-only scope.
-
-## Deterministic Plugin Flow
+## Deterministic Plugin Checks
 
 Run this in the repository checkout:
 
@@ -48,7 +33,7 @@ Run this in the repository checkout:
 mise run check
 ```
 
-For the focused end-to-end scenario:
+For the focused end-to-end plugin scenario:
 
 ```bash
 uv run --extra dev python -m pytest tests/test_end_to_end_flow.py
@@ -66,26 +51,20 @@ The focused test proves this sequence:
 2. `A1_PLAN` passes with user request, Commander interpretation, plan,
    coverage table, risk level, constraints, and evidence.
 3. The mutating action is allowed after same-turn `A1_PLAN`.
-4. Delegation is blocked before `A2_DELEGATION`.
-5. `A2_DELEGATION` passes with Commander plan, Worker assignment,
-   `child_role`, Worker scope, expected evidence, empty-result policy, and risk
-   level.
-6. Delegation is allowed after same-turn `A2_DELEGATION`.
-7. A Worker child session start is recorded.
-8. Final delivery is deferred while the Worker is active.
-9. A Worker child session stop is recorded.
-10. A planned tool failure is recorded.
-11. Final delivery requests `A3_EXCEPTION`.
-12. `A3_EXCEPTION` passes.
-13. Final delivery requests `A3_FINAL`.
-14. `A3_FINAL` receives observed Worker role evidence from receipts.
-15. Final delivery requests `advisor_resolution_gate`.
-16. `advisor_resolution_gate` records Commander continuation.
-17. Final delivery is allowed.
-
-The focused test uses one leaf Worker so the receipt path is deterministic. It
-does not assert that production turns must delegate, use an orchestrator, or
-create a fixed number of leaf Workers.
+4. `kanban_create` is blocked before `A2_DELEGATION`.
+5. `A2_DELEGATION` passes with Commander plan, Kanban Worker assignment,
+   assignee, scope, expected evidence, empty-result policy, and risk level.
+6. `kanban_create` is allowed after same-turn `A2_DELEGATION`.
+7. Kanban tool evidence is recorded for task creation, task read, and task
+   completion.
+8. A planned tool failure is recorded.
+9. Final delivery requests `A3_EXCEPTION`.
+10. `A3_EXCEPTION` passes.
+11. Final delivery requests `A3_FINAL`.
+12. `A3_FINAL` receives Kanban Worker evidence in the final packet.
+13. Final delivery requests `advisor_resolution_gate`.
+14. `advisor_resolution_gate` records Commander continuation.
+15. Final delivery is allowed.
 
 ## Pi Validation
 
@@ -102,11 +81,18 @@ Refresh the installed plugin through the official Hermes installer:
 
 ```bash
 hermes plugins install poruru210/hermes-runtime/plugin/advisor-gate --force --enable
-hermes gateway restart
+sudo systemctl restart hermes-serve.service
 hermes config check
 hermes doctor
 hermes plugins list --plain --no-bundled
 hermes tools list
+```
+
+Verify the Commander profile:
+
+```bash
+hermes profile list
+hermes -p commander profile show commander
 ```
 
 Expected signs:
@@ -114,50 +100,112 @@ Expected signs:
 ```text
 advisor-gate: enabled
 Tool Availability: advisor_gate
+Profile: commander
 ```
 
-Do not commit live receipt files, Hermes logs, tokens, or local terminal logs.
-Record only sanitized command outcomes in documentation or final reports.
+Do not commit live receipt files, Hermes logs, tokens, `.env`, auth files, or
+terminal captures that contain secrets.
 
-## Live Commander / Worker Smoke
+## Minimal Kanban Tool Precheck
 
-Use a new Hermes conversation after the plugin is installed and enabled.
+This verifies that the Commander profile can create a Kanban task and that a
+Worker can read and complete a Kanban task.
+
+Create a blocked, create-only verification task from Commander:
+
+```bash
+hermes -p commander chat -Q --max-turns 4 -t kanban -q \
+  'Call kanban_create exactly once with title "advisor precheck: commander can create kanban task", assignee "default", tenant "advisor-precheck", body "Verification card created by Commander chat to confirm kanban_create availability. Do not execute this card.", idempotency_key "advisor-precheck-commander-create-20260706", and initial_status "blocked".'
+```
+
+Expected:
+
+- A task id is returned.
+- `hermes kanban show <task-id> --json` shows the task.
+- The task is `blocked` or is manually blocked immediately after verification.
+
+Create a Worker verification task:
+
+```bash
+hermes kanban create 'advisor precheck: worker can read and complete kanban task' \
+  --body 'Minimal Worker precheck. On dispatch, read this card via kanban_show, do not modify files, then call kanban_complete with a short summary saying the task was read and completed with no file changes.' \
+  --assignee default \
+  --tenant advisor-precheck \
+  --idempotency-key advisor-precheck-worker-complete-20260706 \
+  --initial-status running \
+  --json
+```
+
+Before dispatch, confirm there are no unrelated ready tasks:
+
+```bash
+hermes kanban list --status ready --json
+```
+
+Dispatch one task:
+
+```bash
+hermes kanban dispatch --max 1 --json
+```
+
+Poll until the task is `done` or `blocked`:
+
+```bash
+hermes kanban show <task-id> --json
+hermes kanban log <task-id>
+```
+
+Pass when:
+
+- The task reaches `done`.
+- The events include `claimed`, `spawned`, heartbeat events, and `completed`.
+- The run includes a completion summary and metadata.
+- The Worker process exits after completion.
+
+## Natural-Language Commander Smoke
+
+Use a new Commander conversation. The prompt should not ask the user to act as
+the orchestrator or name internal phases.
 
 User-facing prompt:
 
 ```text
-Please check whether this repository's Advisor Gate is wired correctly for
-planning, delegation, worker evidence, exception handling, final audit, and
-resolution recording. Use read-only inspection where possible, split the work
-only if it is useful, and include concrete evidence before finalizing.
+Please verify that this repository's Advisor Gate Kanban workflow is wired
+correctly. Use Kanban as the durable task board, create only the minimum Worker
+task needed for evidence, keep the Worker scope read-only, record Advisor
+results on the Kanban task, and report the final result with task ids and
+unresolved items.
 ```
-
-The user prompt intentionally does not assign Commander, Worker, Level 1, or
-Level 2 roles. Those are implementation roles inferred from Hermes' parent
-session, child session, and `child_role` evidence.
 
 Expected Commander behavior:
 
-- Run `advisor_audit` for `A1_PLAN` before implementation or mutating actions.
-- Decide whether delegation is useful.
-- If delegating, run `advisor_audit` for `A2_DELEGATION` before delegation.
-- Choose the number and scope of Workers from the task, not from a fixed
-  topology rule.
-- Keep Worker scope narrow and evidence-focused.
-- Include Worker evidence and observed receipts in `A3_FINAL`.
-- Record `advisor_resolution_gate` before final delivery.
-- If any Advisor result is `CHANGES_REQUIRED` or `BLOCK`, resolve or report it
-  instead of finalizing.
+- Interpret the user request.
+- Run `advisor_audit` for `A1_PLAN` before mutating or assigning work.
+- Create or identify a parent Kanban task for the smoke.
+- Comment the A1 result on the parent task.
+- Prepare one or more narrow Worker assignments.
+- Run `advisor_audit` for `A2_DELEGATION` before `kanban_create` or
+  `kanban_link`.
+- Create Worker task(s) with concrete scope and expected evidence.
+- Dispatch Worker task(s).
+- Wait for `done` or `blocked`.
+- If Advisor returns `CHANGES_REQUIRED`, comment the finding and create or
+  reopen Kanban work before retrying.
+- If Advisor returns `BLOCK`, block the relevant task and stop final delivery.
+- Include Kanban task ids, completion summaries, metadata, and unresolved items
+  in `A3_FINAL`.
+- Run `advisor_resolution_gate` before final delivery.
 
 Expected evidence:
 
-- One parent Commander session id.
-- `A1_PLAN`, `A3_FINAL`, and `RESOLUTION_GATE` receipts.
-- If delegation is used, one or more Worker child session ids.
-- If delegation is used, `child_role` recorded for each Worker.
-- If delegation is used, an `A2_DELEGATION` receipt before delegation.
-- If any tool failure occurs, an `A3_EXCEPTION` receipt after that failure.
-- Final answer does not include hidden unresolved Advisor findings.
+- One Commander session id.
+- One parent Kanban task id.
+- `A1_PLAN`, `A2_DELEGATION`, `A3_FINAL`, and `RESOLUTION_GATE` receipts.
+- A Kanban comment recording each Advisor result.
+- One or more Worker Kanban task ids.
+- Each Worker task has `kanban_show` and `kanban_complete` or `kanban_block`
+  evidence.
+- Final answer does not hide unresolved Advisor findings.
 
 ## Pass / Fail Criteria
 
@@ -167,15 +215,19 @@ Pass only when all of these are true:
 - Plugin checks pass locally and on Pi.
 - The focused end-to-end test passes on Pi.
 - Hermes reports `advisor-gate` enabled and `advisor_gate` available.
-- Receipts show the Commander/Worker/Advisor sequence in order.
+- The `commander` profile exists and has the Kanban toolset.
+- Receipts show the A1/A2/A3/ResolutionGate sequence.
+- Kanban `show` can reconstruct the plan, Advisor results, Worker assignment,
+  Worker completion, and unresolved items.
 - Final delivery is blocked until current `A3_FINAL` and resolution gate exist.
 
 Fail or unresolved when any of these are true:
 
-- `child_role` is missing from Worker evidence.
+- `kanban_create` can run before A2 when A2 gating is enabled.
+- A Worker exits without `kanban_complete` or `kanban_block`.
+- Advisor findings are not written back to Kanban comments or completion
+  metadata.
 - A final draft can pass without current `A3_FINAL`.
 - A passed `A3_FINAL` can finish without `advisor_resolution_gate` when
   resolution gate is required.
-- A tool failure after the latest exception audit can finish without a later
-  `A3_EXCEPTION`.
 - Verification depends on local logs or secrets that cannot be shared.
