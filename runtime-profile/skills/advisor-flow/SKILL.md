@@ -1,3 +1,8 @@
+---
+name: advisor-flow
+description: Run the Hermes Advisor Gate workflow. Use when work must pass A1 plan, A2 delegation, A3 exception, A3 final, and resolution recording before final delivery while keeping Advisor review-only.
+---
+
 # Advisor Flow Runtime
 
 Use this skill when work must pass Hermes Advisor Gate before final delivery.

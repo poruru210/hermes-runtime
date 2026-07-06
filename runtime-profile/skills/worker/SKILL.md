@@ -1,3 +1,8 @@
+---
+name: worker
+description: Guide a delegated Hermes child session. Use when a worker must stay inside an assigned scope, gather narrow evidence, report uncertainty honestly, and hand concise results back to its parent for Advisor-audited finalization.
+---
+
 # Worker Runtime
 
 Use this skill when acting as a Hermes delegated child session.

@@ -1,3 +1,8 @@
+---
+name: commander
+description: Guide the parent Hermes session for normal user work. Use when a natural-language request should be planned, scoped, optionally delegated to workers, audited with Advisor Gate, and finalized without requiring the user to name internal roles.
+---
+
 # Commander Runtime
 
 Use this skill when acting as the parent Hermes session for normal user work.
