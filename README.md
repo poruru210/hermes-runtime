@@ -37,8 +37,11 @@ Advisor Gate adds a review-only audit tool and soft-gate hooks:
 - `transform_llm_output` final-response soft gate
 
 See `docs/advisor-topology-fit.md` for the fit/gap analysis against the
-baseline topology plus Advisor overlay. A1/A2 pre-action enforcement uses the
-official Hermes `pre_tool_call` plugin hook and requires same-turn Advisor
+baseline topology plus Advisor overlay. See `docs/image-spec-compliance.md` for
+the formal compliance table against the source image specification, and
+`docs/image-spec-remediation-plan.md` for the prioritized split between plugin,
+caller skill, and Hermes core follow-up work. A1/A2 pre-action enforcement uses
+the official Hermes `pre_tool_call` plugin hook and requires same-turn Advisor
 receipts when Hermes provides a `turn_id`. A3 final checks use official
 `pre_verify` for coding turns plus `transform_llm_output` as a soft fallback.
 
