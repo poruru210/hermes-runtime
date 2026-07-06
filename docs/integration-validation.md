@@ -102,33 +102,28 @@ Expected result:
 
 ## Discord Orchestration Smoke
 
-Prompt:
+User-facing prompt:
 
 ```text
-Create one Level 1 orchestrator subagent. The orchestrator should decompose
-this into exactly three Level 2 leaf workers. Each leaf should inspect a
-different small, read-only aspect of the workspace and return a concise result.
-Do not spawn any Level 3 agents. After dispatch, run advisor_audit for A3_FINAL
-with the observed tree, evidence, known unresolved items, and final draft.
+Please check whether this repository's Advisor Gate is wired correctly for
+planning, delegation, worker evidence, exception handling, final audit, and
+resolution recording. Use read-only inspection where possible, split the work
+only if it is useful, and include concrete evidence before finalizing.
 ```
 
-Expected `/agents` or `/tasks` shape:
-
-```text
-main agent
-  level 1 orchestrator
-    level 2 leaf worker 1
-    level 2 leaf worker 2
-    level 2 leaf worker 3
-```
+The user prompt intentionally does not name Level 1, Level 2, Commander, or
+Worker roles. The Commander decides whether delegation is useful. If delegation
+is used, inspect `/agents` or `/tasks` while the turn is running.
 
 Pass criteria:
 
-- Level 1 child has orchestrator role.
-- Exactly three Level 2 leaves appear.
-- Level 2 leaves do not spawn Level 3.
+- The user request is natural language, not a topology instruction.
+- The Commander records `A1_PLAN` and, if it delegates, `A2_DELEGATION`.
+- Worker child receipts include `child_session_id` and `child_role`.
+- Worker scope stays narrow and evidence-focused.
 - `subagent_start` / `subagent_stop` receipts are written.
 - `A3_FINAL` receipt exists and verdict is `PASS`.
+- `advisor_resolution_gate` is recorded before final delivery.
 
 ## Current Limitation
 

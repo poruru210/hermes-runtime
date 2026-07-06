@@ -129,26 +129,24 @@ During a delegated turn, inspect the active tree with either command:
 
 ## Discord smoke test
 
-From a new Discord thread, ask Hermes:
+From a new Discord thread, ask Hermes as a normal user. Do not prescribe the
+internal Commander / Worker topology in the user prompt:
 
 ```text
-Create one Level 1 orchestrator subagent. The orchestrator should decompose
-this into exactly three Level 2 leaf workers. Each leaf should inspect a
-different small, read-only aspect of the workspace and return a concise result.
-Do not spawn any Level 3 agents. After dispatch, run advisor_audit for A3_FINAL
-with the observed tree, evidence, known unresolved items, and final draft.
+Please check whether this repository's Advisor Gate is wired correctly for
+planning, delegation, worker evidence, exception handling, final audit, and
+resolution recording. Use read-only inspection where possible, split the work
+only if it is useful, and include concrete evidence before finalizing.
 ```
 
-Expected `/agents` or `/tasks` shape while the turn is running:
+Expected behavior:
 
-```text
-main agent
-  level 1 orchestrator
-    level 2 leaf worker 1
-    level 2 leaf worker 2
-    level 2 leaf worker 3
-```
+- The user speaks in natural language only.
+- The Commander decides whether delegation is useful.
+- If delegation is used, `/agents` or `/tasks` shows the parent/child shape.
+- Worker receipts include `child_session_id` and `child_role`.
+- Worker scope stays narrow and evidence-focused.
+- `A3_FINAL` and `advisor_resolution_gate` receipts exist before final delivery.
 
-The orchestration passes only if the Level 1 child can delegate to three leaf
-children, Level 2 children do not spawn Level 3, subagent receipts are written,
-and an `A3_FINAL` Advisor receipt exists before final delivery.
+Use `docs/end-to-end-validation-runbook.md` for deterministic plugin-level
+validation of the full Commander / Worker / Advisor sequence.

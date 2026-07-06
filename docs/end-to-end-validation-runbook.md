@@ -107,36 +107,37 @@ Record only sanitized command outcomes in documentation or final reports.
 
 Use a new Hermes conversation after the plugin is installed and enabled.
 
-Prompt:
+User-facing prompt:
 
 ```text
-Use Advisor Gate for this turn.
-
-Treat this conversation as the Commander session. Before doing any work, run
-advisor_audit for A1_PLAN with the user request, your interpretation, a task
-plan, a coverage table, risk level, constraints, source evidence, and known
-unresolved items.
-
-Then plan exactly one Worker delegation. Before delegating, run advisor_audit
-for A2_DELEGATION. The Worker assignment must include worker_id, child_role,
-scope, expected_evidence, empty_result_policy, risk_level, and handoff
-expectations.
-
-Delegate one narrow read-only Worker task. The Worker should inspect one small
-part of the current workspace and return concise evidence. Do not spawn deeper
-Workers.
-
-Before final delivery, include Worker evidence and observed receipts in
-A3_FINAL. Then record advisor_resolution_gate. If any Advisor result is
-CHANGES_REQUIRED or BLOCK, resolve or report it instead of finalizing.
+Please check whether this repository's Advisor Gate is wired correctly for
+planning, delegation, worker evidence, exception handling, final audit, and
+resolution recording. Use read-only inspection where possible, split the work
+only if it is useful, and include concrete evidence before finalizing.
 ```
+
+The user prompt intentionally does not assign Commander, Worker, Level 1, or
+Level 2 roles. Those are implementation roles inferred from Hermes' parent
+session, child session, and `child_role` evidence.
+
+Expected Commander behavior:
+
+- Run `advisor_audit` for `A1_PLAN` before implementation or mutating actions.
+- Decide whether delegation is useful.
+- If delegating, run `advisor_audit` for `A2_DELEGATION` before delegation.
+- Keep Worker scope narrow and evidence-focused.
+- Include Worker evidence and observed receipts in `A3_FINAL`.
+- Record `advisor_resolution_gate` before final delivery.
+- If any Advisor result is `CHANGES_REQUIRED` or `BLOCK`, resolve or report it
+  instead of finalizing.
 
 Expected evidence:
 
 - One parent Commander session id.
-- One Worker child session id.
-- `child_role` recorded for the Worker.
-- `A1_PLAN`, `A2_DELEGATION`, `A3_FINAL`, and `RESOLUTION_GATE` receipts.
+- `A1_PLAN`, `A3_FINAL`, and `RESOLUTION_GATE` receipts.
+- If delegation is used, one or more Worker child session ids.
+- If delegation is used, `child_role` recorded for each Worker.
+- If delegation is used, an `A2_DELEGATION` receipt before delegation.
 - If any tool failure occurs, an `A3_EXCEPTION` receipt after that failure.
 - Final answer does not include hidden unresolved Advisor findings.
 

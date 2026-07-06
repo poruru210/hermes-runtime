@@ -132,9 +132,16 @@ Runtime inspection during a turn:
 /tasks
 ```
 
-## Runtime Smoke Test
+## Runtime Topology Diagnostic
 
-From a new Discord thread, ask Hermes:
+This is an operator-only topology diagnostic, not a normal user-facing smoke
+test. It intentionally prescribes internal delegation shape to verify that the
+baseline Hermes delegation depth and `child_role` behavior work as configured.
+
+For normal Advisor smoke tests, use a natural-language request and let the
+Commander decide whether delegation is useful.
+
+From a new diagnostic Discord thread, ask Hermes:
 
 ```text
 Create one Level 1 orchestrator subagent. The orchestrator should decompose
@@ -165,9 +172,10 @@ main agent
     level 2 leaf worker 3
 ```
 
-The test passes only if the Level 1 child is an orchestrator and the Level 2
-children are leaves. It fails if the Level 1 child cannot call `delegate_task`,
-if any Level 2 child can spawn Level 3, or if the active tree cannot be observed.
+The diagnostic passes only if the Level 1 child is an orchestrator and the
+Level 2 children are leaves. It fails if the Level 1 child cannot call
+`delegate_task`, if any Level 2 child can spawn Level 3, or if the active tree
+cannot be observed.
 
 ## No-Secrets Guidance
 
