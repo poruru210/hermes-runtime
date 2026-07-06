@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from advisor_gate.schemas import AdvisorResult, AdvisorVerdict, Severity, validate_result
+from .schemas import AdvisorResult, AdvisorVerdict, Severity, validate_result
 
 
 class PolicyAction(StrEnum):

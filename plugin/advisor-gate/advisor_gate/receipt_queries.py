@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from advisor_gate.policy import is_gate_passed
-from advisor_gate.schemas import (
+from .policy import is_gate_passed
+from .schemas import (
     AdvisorPhase,
     AdvisorResult,
     ResolutionGate,
     resolution_gate_from_dict,
     result_from_dict,
 )
-from advisor_gate.store import ReceiptStore, redact_secrets
-from advisor_gate.tool_schemas import ADVISOR_TOOL_NAMES
+from .store import ReceiptStore, redact_secrets
+from .tool_schemas import ADVISOR_TOOL_NAMES
 
 
 def latest_indexed_entry(

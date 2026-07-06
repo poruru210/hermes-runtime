@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from advisor_gate.store import ReceiptStore, redact_secrets, utc_now_iso
-from advisor_gate.tool_schemas import ADVISOR_TOOL_NAMES
+from .store import ReceiptStore, redact_secrets, utc_now_iso
+from .tool_schemas import ADVISOR_TOOL_NAMES
 
 
 def _result_text_has_error(result: str) -> bool:

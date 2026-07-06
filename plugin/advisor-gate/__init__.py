@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from advisor_gate.registration import register
+from .advisor_gate.registration import register
 
 __all__ = ["register"]

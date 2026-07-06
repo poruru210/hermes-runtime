@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 from typing import Any, cast
 
-from advisor_gate.config import AdvisorGateConfig, load_plugin_config
-from advisor_gate.packets import build_advisor_structured_input
-from advisor_gate.policy import decide_action
-from advisor_gate.receipt_queries import latest_advisor_tool_context, merge_call_context
-from advisor_gate.schemas import (
+from .config import AdvisorGateConfig, load_plugin_config
+from .packets import build_advisor_structured_input
+from .policy import decide_action
+from .receipt_queries import latest_advisor_tool_context, merge_call_context
+from .schemas import (
     AdvisorPhase,
     AdvisorResult,
     AdvisorVerdict,
@@ -21,8 +21,8 @@ from advisor_gate.schemas import (
     result_from_dict,
     result_to_dict,
 )
-from advisor_gate.store import ReceiptStore, redact_secrets
-from advisor_gate.tool_schemas import TOOL_NAME
+from .store import ReceiptStore, redact_secrets
+from .tool_schemas import TOOL_NAME
 
 
 def _error_result(phase: AdvisorPhase, message: str, error_class: str) -> AdvisorResult:

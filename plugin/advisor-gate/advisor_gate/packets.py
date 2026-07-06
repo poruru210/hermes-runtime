@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from advisor_gate.prompts import ADVISOR_SYSTEM_PROMPT, PHASE_INSTRUCTIONS
-from advisor_gate.schemas import AdvisorPhase, final_payload_from_dict, final_payload_to_dict
+from .prompts import ADVISOR_SYSTEM_PROMPT, PHASE_INSTRUCTIONS
+from .schemas import AdvisorPhase, final_payload_from_dict, final_payload_to_dict
 
 
 def build_prompt_packet(phase: AdvisorPhase | str, payload: dict[str, Any]) -> dict[str, Any]:

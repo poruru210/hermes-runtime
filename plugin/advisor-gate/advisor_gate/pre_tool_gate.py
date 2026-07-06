@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from advisor_gate.config import AdvisorGateConfig
-from advisor_gate.receipt_queries import latest_passed_audit_index
-from advisor_gate.schemas import AdvisorPhase
-from advisor_gate.store import ReceiptStore, redact_secrets, utc_now_iso
-from advisor_gate.tool_schemas import ADVISOR_TOOL_NAMES
+from .config import AdvisorGateConfig
+from .receipt_queries import latest_passed_audit_index
+from .schemas import AdvisorPhase
+from .store import ReceiptStore, redact_secrets, utc_now_iso
+from .tool_schemas import ADVISOR_TOOL_NAMES
 
 
 def _effective_session_id(*values: Any) -> str:

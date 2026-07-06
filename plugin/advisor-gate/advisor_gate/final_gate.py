@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from advisor_gate.config import AdvisorGateConfig
-from advisor_gate.policy import build_gate_message, is_gate_passed
-from advisor_gate.receipt_queries import (
+from .config import AdvisorGateConfig
+from .policy import build_gate_message, is_gate_passed
+from .receipt_queries import (
     latest_current_final_audit,
     latest_resolution_gate_after_final_audit,
     latest_unresolved_exception_event,
 )
-from advisor_gate.schemas import AdvisorPhase, ResolutionDecision
-from advisor_gate.store import ReceiptStore
+from .schemas import AdvisorPhase, ResolutionDecision
+from .store import ReceiptStore
 
 
 def _exception_gate_message(exception_event: dict[str, Any]) -> str:

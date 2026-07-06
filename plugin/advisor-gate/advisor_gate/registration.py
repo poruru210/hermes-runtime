@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from advisor_gate.audit_handlers import advisor_audit_handler
-from advisor_gate.config import load_plugin_config
-from advisor_gate.event_hooks import on_post_tool_call, on_subagent_start, on_subagent_stop
-from advisor_gate.final_gate import on_pre_verify, on_transform_llm_output
-from advisor_gate.pre_tool_gate import on_pre_tool_call
-from advisor_gate.resolution_handlers import advisor_resolution_gate_handler
-from advisor_gate.store import ReceiptStore
-from advisor_gate.tool_schemas import (
+from .audit_handlers import advisor_audit_handler
+from .config import load_plugin_config
+from .event_hooks import on_post_tool_call, on_subagent_start, on_subagent_stop
+from .final_gate import on_pre_verify, on_transform_llm_output
+from .pre_tool_gate import on_pre_tool_call
+from .resolution_handlers import advisor_resolution_gate_handler
+from .store import ReceiptStore
+from .tool_schemas import (
     ADVISOR_AUDIT_SCHEMA,
     ADVISOR_RESOLUTION_GATE_SCHEMA,
     RESOLUTION_TOOL_NAME,

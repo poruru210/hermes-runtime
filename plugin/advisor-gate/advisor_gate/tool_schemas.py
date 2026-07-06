@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from advisor_gate.schemas import AdvisorPhase, ResolutionDecision
+from .schemas import AdvisorPhase, ResolutionDecision
 
 TOOL_NAME = "advisor_audit"
 RESOLUTION_TOOL_NAME = "advisor_resolution_gate"

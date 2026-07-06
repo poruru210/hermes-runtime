@@ -5,16 +5,16 @@ from __future__ import annotations
 import json
 from typing import Any, cast
 
-from advisor_gate.config import AdvisorGateConfig, load_plugin_config
-from advisor_gate.receipt_queries import latest_advisor_tool_context, merge_call_context
-from advisor_gate.schemas import (
+from .config import AdvisorGateConfig, load_plugin_config
+from .receipt_queries import latest_advisor_tool_context, merge_call_context
+from .schemas import (
     ResolutionDecision,
     ResolutionGate,
     resolution_gate_from_dict,
     resolution_gate_to_dict,
 )
-from advisor_gate.store import ReceiptStore, redact_secrets
-from advisor_gate.tool_schemas import RESOLUTION_TOOL_NAME
+from .store import ReceiptStore, redact_secrets
+from .tool_schemas import RESOLUTION_TOOL_NAME
 
 
 def advisor_resolution_gate_handler(

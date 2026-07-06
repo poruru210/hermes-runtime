@@ -5,7 +5,7 @@ the pure data model and receipt store independent from live Hermes runtime so
 they can be tested without credentials or network access.
 """
 
-from advisor_gate.schemas import (
+from .schemas import (
     AdvisorPhase,
     AdvisorResult,
     AdvisorVerdict,
