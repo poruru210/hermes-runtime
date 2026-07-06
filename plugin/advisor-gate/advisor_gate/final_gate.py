@@ -5,11 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from .config import AdvisorGateConfig
-from .policy import build_gate_message, is_gate_passed
+from .policy import build_gate_message
 from .receipt_queries import (
     latest_current_final_audit,
     latest_resolution_gate_after_final_audit,
     latest_unresolved_exception_event,
+    result_verdict_passed,
 )
 from .schemas import AdvisorPhase, ResolutionDecision
 from .store import ReceiptStore
@@ -86,7 +87,7 @@ def on_transform_llm_output(
             "commander_decision='continue' and explicit finding resolutions, "
             "after the current A3_FINAL audit before final delivery."
         )
-    if latest is not None and is_gate_passed(latest):
+    if latest is not None and result_verdict_passed(latest):
         return (
             "Advisor Gate: CHANGES_REQUIRED\n\n"
             "The latest A3_FINAL receipt is stale or does not match this final "

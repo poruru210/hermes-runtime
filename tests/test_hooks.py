@@ -516,6 +516,40 @@ def test_pass_final_still_requires_resolution_gate_by_default(tmp_path):
     assert "resolution gate is missing" in transformed
 
 
+def test_degraded_final_with_changed_draft_requests_reaudit(tmp_path):
+    store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
+    store.append_result(
+        session_id="s1",
+        result=AdvisorResult(
+            phase=AdvisorPhase.A3_FINAL,
+            verdict=AdvisorVerdict.PASS,
+            degraded=True,
+            known_unresolved=("Live runtime check unresolved.",),
+            diagnostics=("Known limitation was disclosed.",),
+        ),
+        source="test",
+        extra={
+            "packet": {
+                "actions_taken": [],
+                "tests_or_checks": [],
+                "known_unresolved": ["Live runtime check unresolved."],
+                "final_answer_draft": "old draft",
+                "flow_summary": "tested",
+            }
+        },
+    )
+
+    transformed = on_transform_llm_output(
+        store,
+        AdvisorGateConfig(),
+        response_text="new draft",
+        session_id="s1",
+    )
+
+    assert transformed is not None
+    assert "stale or does not match" in transformed
+
+
 def test_final_delivery_gate_requests_a3_final_when_missing(tmp_path):
     store = ReceiptStore.from_path(tmp_path / "receipts.jsonl")
     response = on_final_delivery_gate(
